@@ -1,5 +1,5 @@
 # TnG_CBSE
-# **How to start**
+## **How to start**
 ## 1. Clone the repository and switch to your branch
 git clone <your-repo-url>
 
