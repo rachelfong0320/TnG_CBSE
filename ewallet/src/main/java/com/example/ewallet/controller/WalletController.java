@@ -1,6 +1,5 @@
 package com.example.ewallet.controller;
 
-import com.example.ewallet.entity.User;
 import com.example.ewallet.entity.Wallet;
 import com.example.ewallet.service.WalletService;
 import org.springframework.web.bind.annotation.*;
