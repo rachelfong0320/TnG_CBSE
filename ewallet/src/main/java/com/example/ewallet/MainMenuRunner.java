@@ -1,8 +1,8 @@
 package com.example.ewallet;
 
 import com.example.ewallet.entity.Wallet;
-import com.example.ewallet.insurance.entity.BasePolicy;
-import com.example.ewallet.insurance.service.InsuranceService;
+import com.example.ewallet.entity.BasePolicy;
+import com.example.ewallet.service.InsuranceService;
 import com.example.ewallet.service.WalletService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;

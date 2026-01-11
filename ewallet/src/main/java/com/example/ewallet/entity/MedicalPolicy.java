@@ -1,4 +1,4 @@
-package com.example.ewallet.insurance.entity;
+package com.example.ewallet.entity;
 
 import java.util.Date;
 

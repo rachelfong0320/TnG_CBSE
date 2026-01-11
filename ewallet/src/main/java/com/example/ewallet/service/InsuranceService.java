@@ -1,9 +1,11 @@
-package com.example.ewallet.insurance.service;
+package com.example.ewallet.service;
 
-import com.example.ewallet.insurance.entity.*;
-import com.example.ewallet.insurance.repository.ClaimRepository;
-import com.example.ewallet.insurance.repository.PolicyRepository;
-import com.example.ewallet.service.WalletService;
+import com.example.ewallet.entity.BasePolicy;
+import com.example.ewallet.entity.ClaimRecord;
+import com.example.ewallet.entity.MotorPolicy;
+import com.example.ewallet.entity.TravelPolicy;
+import com.example.ewallet.repository.ClaimRepository;
+import com.example.ewallet.repository.PolicyRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
