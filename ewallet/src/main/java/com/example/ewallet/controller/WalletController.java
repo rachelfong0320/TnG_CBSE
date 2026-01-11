@@ -1,6 +1,7 @@
 package com.example.ewallet.controller;
 
 import com.example.ewallet.entity.User;
+import com.example.ewallet.entity.Wallet;
 import com.example.ewallet.service.WalletService;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,17 +15,23 @@ public class WalletController {
         this.walletService = walletService;
     }
 
-    // Create wallet (new user with initial balance)
+    // Create wallet for user
     @PostMapping("/create")
-    public User createWallet(
+    public Wallet createWallet(
             @RequestParam String username,
             @RequestParam double balance) {
-        return walletService.createWallet(username, balance);
+        return walletService.findOrCreateWallet(username, balance);
+    }
+
+    // View wallet by username
+    @GetMapping("/{username}")
+    public Wallet getWallet(@PathVariable String username) {
+        return walletService.getWallet(username);
     }
 
     // View all wallets
     @GetMapping("/all")
-    public Iterable<User> getAllWallets() {
+    public Iterable<Wallet> getAllWallets() {
         return walletService.getAllWallets();
     }
 }

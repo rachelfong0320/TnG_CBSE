@@ -8,14 +8,12 @@ public class User {
     @Id
     private String id;
     private String username;
-    private double balance;
 
     public User() {
     }
 
-    public User(String username, double balance) {
+    public User(String username) {
         this.username = username;
-        this.balance = balance;
     }
 
     // Getters and Setters
@@ -29,13 +27,5 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public double getBalance() {
-        return balance;
-    }
-
-    public void setBalance(double balance) {
-        this.balance = balance;
     }
 }
