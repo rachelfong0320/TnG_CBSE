@@ -40,7 +40,8 @@ public class MainMenuRunner implements CommandLineRunner {
             boolean running = true;
             while (running) {
                 System.out.println("\n=== MAIN MENU ===");
-                System.out.printf("User: %s | Wallet Balance: RM %.2f%n", username, wallet.getBalance());
+                double balance = walletService.getWallet(username).getBalance();
+                System.out.printf("User: %s | Wallet Balance: RM %.2f%n", username, balance);
                 System.out.println("1. Wallet Menu");
                 System.out.println("2. GOprotect Dashboard (Insurance)");
                 System.out.println("0. Exit");
