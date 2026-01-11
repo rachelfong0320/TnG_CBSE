@@ -1,4 +1,4 @@
-package com.example.ewallet.insurance.entity;
+package com.example.ewallet.entity;
 
 public class MotorPolicy extends BasePolicy {
     private String plateNumber;

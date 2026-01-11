@@ -1,6 +1,6 @@
-package com.example.ewallet.insurance.repository;
+package com.example.ewallet.repository;
 
-import com.example.ewallet.insurance.entity.ClaimRecord;
+import com.example.ewallet.entity.ClaimRecord;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 

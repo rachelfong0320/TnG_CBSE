@@ -1,4 +1,4 @@
-package com.example.ewallet.insurance.entity;
+package com.example.ewallet.entity;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
