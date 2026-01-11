@@ -36,25 +36,37 @@ public class WalletService {
     }
 
     public Wallet getWallet(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return walletRepository.findByUserId(user.getId());
+        return userRepository.findByUsername(username)
+                .map(user -> walletRepository.findByUserId(user.getId()))
+                .orElse(null);
     }
-  
-   public Iterable<Wallet> getAllWallets() {
+
+    public Iterable<Wallet> getAllWallets() {
         return walletRepository.findAll();
     }
-  
-    // New content added by mingyang.I added a deductBalance method in your WalletService to handle the money deduction.
+
+    public Wallet addFunds(String username, double amount) {
+        Wallet wallet = getWallet(username);
+        if (wallet != null) {
+            wallet.setBalance(wallet.getBalance() + amount);
+            walletRepository.save(wallet);
+            return wallet;
+        } else {
+            System.out.println("User wallet not found: " + username);
+            return null;
+        }
+    }
+
+    // New content added by mingyang
+    // WalletService to handle the money deduction.
     public boolean deductBalance(String username, double amount, String description) {
-        User user = userRepository.findByUsername(username).orElse(null);
-        if (user != null && user.getBalance() >= amount) {
-            user.setBalance(user.getBalance() - amount);
-            userRepository.save(user);
+        Wallet wallet = getWallet(username);
+        if (wallet != null && wallet.getBalance() >= amount) {
+            wallet.setBalance(wallet.getBalance() - amount);
+            walletRepository.save(wallet);
             System.out.println("[WALLET LOG]: Deducted RM" + amount + " from " + username + ". Reason: " + description);
             return true;
         }
         return false;
-
+    }
 }
