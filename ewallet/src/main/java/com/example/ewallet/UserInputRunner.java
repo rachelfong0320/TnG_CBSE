@@ -1,8 +1,7 @@
 package com.example.ewallet;
 
-import com.example.ewallet.entity.User;
+import com.example.ewallet.entity.Wallet;
 import com.example.ewallet.service.WalletService;
-
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -24,29 +23,29 @@ public class UserInputRunner implements CommandLineRunner {
             System.out.print("Enter username: ");
             String username = scanner.nextLine();
 
-            // Find user
-            User user = walletService.findUser(username);
-
-            if (user == null) {
+            // Find or create wallet
+            Wallet wallet = walletService.getWallet(username);
+            if (wallet == null) {
                 System.out.print("Welcome " + username + ", please enter initial balance (e.g., 100.00): RM");
                 double balance = scanner.nextDouble();
                 scanner.nextLine();
 
-                user = walletService.createWallet(username, balance);
+                wallet = walletService.findOrCreateWallet(username, balance);
                 System.out.println("User created successfully!");
             } else {
                 System.out.println("Hello " + username + "!");
             }
 
-            System.out.println("User: " + username);
+            System.out.println("Username: " + username);
 
             // Enquiry loop
             while (true) {
-                System.out.printf("Balance: RM%.2f%n", user.getBalance());
+                System.out.printf("Balance: RM%.2f%n", wallet.getBalance());
                 System.out.println("Enter -1 to exit, or any key to refresh balance:");
 
                 if (scanner.nextLine().equals("-1")) {
-                    System.out.println("Exiting... Thank you for using the e-wallet!");
+                    System.out.println("Exiting...");
+                    System.out.println("Thank you for using the e-wallet!");
                     break;
                 }
             }

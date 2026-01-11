@@ -1,34 +1,51 @@
 package com.example.ewallet.service;
 
 import com.example.ewallet.entity.User;
+import com.example.ewallet.entity.Wallet;
 import com.example.ewallet.repository.UserRepository;
+import com.example.ewallet.repository.WalletRepository;
+
 import org.springframework.stereotype.Service;
 
 @Service
 public class WalletService {
 
     private final UserRepository userRepository;
+    private final WalletRepository walletRepository;
 
-    public WalletService(UserRepository userRepository) {
+    public WalletService(UserRepository userRepository, WalletRepository walletRepository) {
         this.userRepository = userRepository;
+        this.walletRepository = walletRepository;
     }
 
-    // Find user by username, return null if not exists
-    public User findUser(String username) {
-        return userRepository.findByUsername(username).orElse(null);
+    public Wallet findOrCreateWallet(String username, double initialBalance) {
+
+        // Find or create user
+        User user = userRepository.findByUsername(username)
+                .orElseGet(() -> userRepository.save(new User(username)));
+
+        // Find wallet by userId
+        Wallet wallet = walletRepository.findByUserId(user.getId());
+
+        // If no wallet, create one
+        if (wallet == null) {
+            wallet = walletRepository.save(new Wallet(user.getId(), initialBalance));
+        }
+
+        return wallet;
     }
 
-    // Create wallet if not exists
-    public User createWallet(String username, double balance) {
-        return userRepository.findByUsername(username)
-                .orElseGet(() -> userRepository.save(new User(username, balance)));
-    }
+    public Wallet getWallet(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    // Retrieve all wallet accounts
-    public Iterable<User> getAllWallets() {
-        return userRepository.findAll();
-
+        return walletRepository.findByUserId(user.getId());
     }
+  
+   public Iterable<Wallet> getAllWallets() {
+        return walletRepository.findAll();
+    }
+  
     // New content added by mingyang.I added a deductBalance method in your WalletService to handle the money deduction.
     public boolean deductBalance(String username, double amount, String description) {
         User user = userRepository.findByUsername(username).orElse(null);
@@ -39,5 +56,5 @@ public class WalletService {
             return true;
         }
         return false;
-    }
+
 }

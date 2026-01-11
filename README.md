@@ -38,7 +38,6 @@ mkdir C:\data\db       # create data folder if it doesn't exist
 Keep this terminal open — MongoDB will run on localhost:27017.
 
 ## 3. Run the Spring Boot application
-
-Using Maven:
+cd ewallet
 
 mvn spring-boot:run
