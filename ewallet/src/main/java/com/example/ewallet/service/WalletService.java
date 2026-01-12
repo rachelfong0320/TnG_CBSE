@@ -64,7 +64,6 @@ public class WalletService {
         if (wallet != null && wallet.getBalance() >= amount) {
             wallet.setBalance(wallet.getBalance() - amount);
             walletRepository.save(wallet);
-            System.out.println("[WALLET LOG]: Deducted RM" + amount + " from " + username + ". Reason: " + description);
             return true;
         }
         return false;
