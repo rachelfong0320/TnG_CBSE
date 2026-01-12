@@ -7,6 +7,7 @@ import com.example.ewallet.entity.TravelPolicy;
 import com.example.ewallet.repository.ClaimRepository;
 import com.example.ewallet.repository.PolicyRepository;
 import org.springframework.stereotype.Service;
+import com.example.ewallet.service.PaymentService;
 
 import java.util.Date;
 import java.util.List;
@@ -17,21 +18,21 @@ public class InsuranceService {
 
     private final PolicyRepository policyRepository;
     private final ClaimRepository claimRepository;
-    private final WalletService walletService;
+    private final PaymentService paymentService;
 
     public InsuranceService(PolicyRepository policyRepository,
                             ClaimRepository claimRepository,
-                            WalletService walletService) {
+                            PaymentService paymentService) {
         this.policyRepository = policyRepository;
         this.claimRepository = claimRepository;
-        this.walletService = walletService;
+        this.paymentService = paymentService;
     }
 
     // Purchase Motor Insurance
     public void purchaseMotorPolicy(String username, String plateNo, String model) {
         double price = 500.0;
 
-        boolean paymentSuccess = walletService.deductBalance(username, price, "Purchase Motor Insurance");
+        boolean paymentSuccess = paymentService.processPayment(username, price, "Purchase Motor Insurance");
 
         if (paymentSuccess) {
             MotorPolicy policy = new MotorPolicy();
@@ -56,7 +57,7 @@ public class InsuranceService {
     public void purchaseTravelPolicy(String username, String destination, int pax) {
         double price = 80.0 * pax;
 
-        if (walletService.deductBalance(username, price, "Purchase Travel Insurance")) {
+        if (paymentService.processPayment(username, price, "Purchase Travel Insurance")) {
             TravelPolicy policy = new TravelPolicy();
             policy.setUserId(username);
             policy.setStatus("Active");
