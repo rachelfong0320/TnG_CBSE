@@ -105,7 +105,7 @@ public class MainMenuRunner implements CommandLineRunner {
                     System.out.print("Enter amount to add: RM ");
                     try {
                         double amount = Double.parseDouble(scanner.nextLine());
-                        walletService.addFunds(username, amount);
+                        paymentService.processTopUp(username, amount);
                         System.out.println("Funds added successfully!");
                     } catch (Exception e) {
                         System.out.println("Invalid input, try again.");
