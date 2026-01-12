@@ -67,16 +67,16 @@ public class MainMenuRunner implements CommandLineRunner {
                     case "1":
                         walletMenu(scanner, username);
                         break;
-                    case "3":
-                        insuranceMenu(scanner, username);
-                        break;
-                    
                     case "2":
                         paymentMenu(scanner, username); 
+                        break;
+                    case "3":
+                        insuranceMenu(scanner, username);
                         break;
                     case "4":
                         investmentService.initSampleFunds();
                         investmentMenu(scanner, username);
+                        break;
                     case "0":
                         running = false;
                         System.out.println("Exiting...");
@@ -298,13 +298,7 @@ public class MainMenuRunner implements CommandLineRunner {
             System.out.println("4. View Investment History");
             System.out.println("5. View Portfolio & Returns");
             System.out.println("6. Take Risk Assessment Quiz");
-
-            if (username.equalsIgnoreCase("admin")) {
-                System.out.println("\n[ADMIN CONTROLS]");
-                System.out.println("98. Delete Fund");
-                System.out.println("99. Create Fund");
-            }
-
+            System.out.println("7. Simulate Market Flunctuations");
             System.out.println("0. Back to Main Menu");
             System.out.print("Select Option: ");
 
@@ -406,46 +400,6 @@ public class MainMenuRunner implements CommandLineRunner {
                     System.out.println("\n--- SIMULATING MARKET FLUCTUATIONS ---");
                     investmentService.simulateMarketChange();
                     System.out.println("Market prices updated! Check your Portfolio (Option 5) to see the impact.");
-                break;
-
-                case "98": // ADMIN DELETE
-                    if (!username.equalsIgnoreCase("admin")) {
-                        System.out.println("Unauthorized access.");
-                        break;
-                    }
-                    System.out.println(investmentService.getFormattedFundsTable(username));
-                    System.out.print("Enter Fund Number to delete: ");
-                    try {
-                        int delIndex = Integer.parseInt(scanner.nextLine());
-                        String deletedName = investmentService.deleteFund(delIndex);
-                        System.out.println("Fund '" + deletedName + "' deleted successfully.");
-                    } catch (Exception e) {
-                        System.out.println("Error: " + e.getMessage());
-                    }
-                    break;
-
-                case "99": // ADMIN CREATE
-                    try {
-                        if (!username.equalsIgnoreCase("admin")) {
-                            System.out.println("Unauthorized access.");
-                            break;
-                        }
-                        System.out.print("Enter Fund ID: ");
-                        String id = scanner.nextLine();
-                        System.out.print("Enter Fund Name: ");
-                        String name = scanner.nextLine();
-                        System.out.print("Enter Description: ");
-                        String desc = scanner.nextLine();
-                        System.out.print("Enter Risk Category (Low/Medium/High): ");
-                        String risk = scanner.nextLine();
-                        System.out.print("Enter Initial Price: RM ");
-                        double price = Double.parseDouble(scanner.nextLine());
-                        
-                        investmentService.createFund(id, name, desc, risk, price);
-                        System.out.println("Fund created successfully!");
-                    } catch (Exception e) {
-                        System.out.println("Error: " + e.getMessage());
-                    }
                     break;
 
                 case "0":

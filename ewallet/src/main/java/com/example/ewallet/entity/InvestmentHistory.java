@@ -12,6 +12,7 @@ public class InvestmentHistory {
     private String investmentHistoryId;
     private String fundId;
     private String userId; // Linking to the User
+    private String type;
     private double amount;
     private double units;
     private String status;
@@ -31,6 +32,7 @@ public class InvestmentHistory {
     public String getInvestmentHistoryId() { return investmentHistoryId; }
     public String getFundId() { return fundId; }
     public String getUserId() { return userId; }
+    public String getType() { return type; }
     public double getAmount() { return amount; }
     public double getUnits() { return units; }
     public String getStatus() { return status; }
@@ -38,6 +40,7 @@ public class InvestmentHistory {
 
     public void setFundId(String fundId) { this.fundId = fundId; }
     public void setUserId(String userId) { this.userId = userId; }
+    public void setType(String type) { this.type = type; }
     public void setAmount(double amount) { this.amount = amount; }
     public void setUnits(double units) { this.units = units; }
     public void setStatus(String status) { this.status = status; }

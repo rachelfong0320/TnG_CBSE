@@ -20,17 +20,19 @@ public class InvestmentService {
     private final InvestmentHistoryRepository investmentHistoryRepository;
     private final PortfolioRepository portfolioRepository;
 
-    // Injecting WalletService to handle payments (need to change once PaymentService is up)
     private final WalletService walletService; 
+    private final PaymentService paymentService;
 
     public InvestmentService(FundRepository fundRepository, 
                              InvestmentHistoryRepository investmentHistoryRepository, 
                              PortfolioRepository portfolioRepository, 
-                             WalletService walletService) {
+                             WalletService walletService,
+                             PaymentService paymentService) {
         this.fundRepository = fundRepository;
         this.investmentHistoryRepository = investmentHistoryRepository;
         this.portfolioRepository = portfolioRepository;
         this.walletService = walletService;
+        this.paymentService = paymentService;
     }
 
     public void initSampleFunds() {
@@ -63,8 +65,7 @@ public class InvestmentService {
         Fund fund = fundRepository.findById(fundId)
                 .orElseThrow(() -> new RuntimeException("Fund not found with ID: " + fundId));
 
-        // Deduct money from Wallet using existing WalletService
-        boolean paymentSuccessful = walletService.deductBalance(username, amount, "Investment in " + fund.getName());
+        boolean paymentSuccessful = paymentService.processPayment(username, amount, "Investment: " + fund.getName());
 
         if (paymentSuccessful) {
             try {
@@ -72,6 +73,7 @@ public class InvestmentService {
                 InvestmentHistory investment = new InvestmentHistory();
                 investment.setUserId(username);
                 investment.setFundId(fundId);
+                investment.setType("BUY");
                 investment.setAmount(amount);
                 investment.calculateUnits(fund.getPrice());
                 investment.setStatus("Success");
@@ -82,7 +84,7 @@ public class InvestmentService {
                 return savedInvestment;
             } catch (Exception e) {
                 walletService.addFunds(username, amount);
-                throw new RuntimeException("System Error: " + e.getMessage() + "\nMoney refunded.");
+                throw new RuntimeException("System Error: Invest in fund failed. Your money is refunded.");
             }
         } else {
             throw new RuntimeException("Insufficient wallet balance.");
@@ -115,8 +117,10 @@ public class InvestmentService {
         InvestmentHistory saleLog = new InvestmentHistory();
         saleLog.setUserId(username);
         saleLog.setFundId(fundId);
-        saleLog.setAmount(-proceeds); // Negative amount to represent sale
-        saleLog.setUnits(-unitsToSell);
+        saleLog.setType("SELL");
+        saleLog.setAmount(proceeds); 
+        saleLog.setUnits(unitsToSell);
+        saleLog.setStatus("SUCCESS");
         investmentHistoryRepository.save(saleLog);
     }
 
@@ -140,7 +144,7 @@ public class InvestmentService {
 
         // 1. Calculate Total Cost Basis 
         double netInvestment = history.stream()
-                .mapToDouble(InvestmentHistory::getAmount)
+                .mapToDouble(h -> "BUY".equals(h.getType()) ? h.getAmount() : -h.getAmount())
                 .sum(); 
         
         // 2. Calculate Current Market Value of all holdings
@@ -192,7 +196,6 @@ public class InvestmentService {
         return sb.toString();
     }
 
-    // Fix for formatted history to prevent String out of bounds errors
     public String getFormattedHistory(String username) {
         List<InvestmentHistory> history = getUserInvestments(username);
         if (history.isEmpty()) return "No transaction history found.";
@@ -203,13 +206,14 @@ public class InvestmentService {
         sb.append("-".repeat(80)).append("\n");
 
         for (InvestmentHistory h : history) {
-            String type = h.getUnits() > 0 ? "BUY" : "SELL";
-            // Safe date formatting
             String dateStr = (h.getTimestamp() != null) ? h.getTimestamp().toString() : "N/A";
             if (dateStr.length() > 19) dateStr = dateStr.substring(0, 19);
 
-            sb.append(String.format("%-22s | %-10s | %-12s | %-10.4f | RM %-8.2f%n", 
-                dateStr, type, h.getFundId(), h.getUnits(), Math.abs(h.getAmount())));
+            String prefix = "BUY".equalsIgnoreCase(h.getType()) ? "-" : "+";
+            String amountDisplay = String.format("%s RM %.2f", prefix, h.getAmount());
+
+            sb.append(String.format("%-22s | %-10s | %-12s | %-10.4f | %12s%n", 
+                dateStr, h.getType(), h.getFundId(), h.getUnits(), amountDisplay));
         }
         return sb.toString();
     }
@@ -276,7 +280,7 @@ public class InvestmentService {
         // List holdings if they exist
         Map<String, Double> holdings = portfolio.getFundHoldings();
         if (holdings == null || holdings.isEmpty()) {
-            sb.append("Holdings     : No active investments.%n");
+            sb.append(String.format("Holdings     : No active investments.%n"));
         } else {
             sb.append("CURRENT HOLDINGS:\n");
             for (Map.Entry<String, Double> entry : holdings.entrySet()) {
