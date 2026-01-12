@@ -108,6 +108,27 @@ public class PaymentService {
         System.out.println("--- End Simulation ---\n");
     }
 
+    // 5. Process Wallet Top-Up
+    public void processTopUp(String username, double amount) {
+        // 1. Call WalletService to actually add the money
+        // We assume walletService.addFunds returns the updated Wallet object or null
+        var result = walletService.addFunds(username, amount);
+
+        if (result != null) {
+            // 2. If successful, log it in PaymentData
+            PaymentData log = new PaymentData(
+                username, 
+                amount, 
+                "Wallet Top-Up", 
+                "SUCCESS"
+            );
+            paymentDataRepository.save(log);
+            System.out.println("Top-Up Successful! Transaction recorded.");
+        } else {
+            System.out.println("Top-Up Failed: User not found.");
+        }
+    }
+
     // History Methods
     public List<PaymentData> getPaymentHistory(String username) { return paymentDataRepository.findByUserId(username); }
     public List<QRData> getQRHistory(String username) { return qrDataRepository.findByUserId(username); }
