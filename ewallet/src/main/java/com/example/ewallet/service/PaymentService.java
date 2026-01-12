@@ -1,0 +1,115 @@
+package com.example.ewallet.service;
+
+import com.example.ewallet.entity.AutoPayData;
+import com.example.ewallet.entity.PaymentData;
+import com.example.ewallet.entity.QRData;
+import com.example.ewallet.repository.AutoPayDataRepository;
+import com.example.ewallet.repository.PaymentDataRepository;
+import com.example.ewallet.repository.QRDataRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.List;
+
+@Service
+public class PaymentService {
+
+    private final PaymentDataRepository paymentDataRepository;
+    private final QRDataRepository qrDataRepository;
+    private final AutoPayDataRepository autoPayDataRepository;
+    private final WalletService walletService;
+
+    public PaymentService(PaymentDataRepository paymentDataRepository,
+                          QRDataRepository qrDataRepository,
+                          AutoPayDataRepository autoPayDataRepository,
+                          WalletService walletService) {
+        this.paymentDataRepository = paymentDataRepository;
+        this.qrDataRepository = qrDataRepository;
+        this.autoPayDataRepository = autoPayDataRepository;
+        this.walletService = walletService;
+    }
+
+    // 1. Process Retail Payment
+    public boolean processPayment(String username, double amount, String merchantName) {
+        boolean success = walletService.deductBalance(username, amount, "Payment to " + merchantName);
+        PaymentData payment = new PaymentData(username, amount, merchantName, success ? "SUCCESS" : "FAILED");
+        paymentDataRepository.save(payment);
+        
+        if (success) System.out.println("Payment successful.");
+        else System.out.println("Payment failed: Insufficient funds.");
+        
+        return success;
+    }
+
+    // 2. Process QR Payment
+    public void processQRPayment(String username, String qrString) {
+        try {
+            String[] parts = qrString.split(":");
+            if (parts.length == 2) {
+                String merchant = parts[0];
+                double amount = Double.parseDouble(parts[1]);
+                
+                boolean success = walletService.deductBalance(username, amount, "QR Pay: " + merchant);
+                QRData qr = new QRData(username, qrString, merchant, amount, success ? "SUCCESS" : "FAILED");
+                qrDataRepository.save(qr);
+                
+                System.out.println(success ? "QR Payment successful!" : "QR Payment failed: Insufficient funds.");
+            } else {
+                System.out.println("Invalid QR format.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid QR Amount.");
+        }
+    }
+
+    // 3. Setup AutoPay ONLY (No Deduction yet)
+    public void setupAutoPay(String username, String billerName, double amount, int billingDay) {
+        AutoPayData autoPay = new AutoPayData(username, billerName, amount, billingDay);
+        autoPayDataRepository.save(autoPay);
+        System.out.println("AutoPay Setup Successfully!");
+        System.out.println("Schedule: Deduct RM" + amount + " on Day " + billingDay + " of every month.");
+        System.out.println("No funds have been deducted yet.");
+    }
+
+    // 4. Simulate Month Passing (Triggers the actual deduction)
+    public void simulateAutoPayExecution(String username, String currentMonthStr) {
+        System.out.println("\n--- Simulating AutoPay Run for " + currentMonthStr + " ---");
+        
+        List<AutoPayData> myAutoPays = autoPayDataRepository.findByUserId(username);
+        
+        if (myAutoPays.isEmpty()) {
+            System.out.println("No active AutoPay setups found.");
+            return;
+        }
+
+        for (AutoPayData ap : myAutoPays) {
+            if ("Active".equals(ap.getStatus())) {
+                String desc = "AutoPay (" + currentMonthStr + ") to " + ap.getRecipientId();
+                
+                // Attempt Deduction
+                boolean success = walletService.deductBalance(username, ap.getAmount(), desc);
+                
+                // Update Last Executed Date
+                ap.setLastExecuted(new Date());
+                autoPayDataRepository.save(ap);
+                
+                // Log the transaction in PaymentData (so it shows in history)
+                PaymentData log = new PaymentData(username, ap.getAmount(), ap.getRecipientId(), 
+                        success ? "SUCCESS (" + currentMonthStr + ")" : "FAILED (" + currentMonthStr + ")");
+                paymentDataRepository.save(log);
+
+                if (success) {
+                    System.out.println(" [SUCCESS] Processed scheduled payment to " + ap.getRecipientId());
+                } else {
+                    System.out.println(" [FAILED] Could not process payment to " + ap.getRecipientId() + " (Insufficient Funds)");
+                }
+            }
+        }
+        System.out.println("--- End Simulation ---\n");
+    }
+
+    // History Methods
+    public List<PaymentData> getPaymentHistory(String username) { return paymentDataRepository.findByUserId(username); }
+    public List<QRData> getQRHistory(String username) { return qrDataRepository.findByUserId(username); }
+    public List<AutoPayData> getAutoPayHistory(String username) { return autoPayDataRepository.findByUserId(username); }
+}
