@@ -5,6 +5,10 @@ import com.example.ewallet.entity.AutoPayData;
 import com.example.ewallet.entity.BasePolicy;
 import com.example.ewallet.entity.PaymentData;
 import com.example.ewallet.entity.QRData;
+import com.example.ewallet.entity.Fund;
+import com.example.ewallet.entity.InvestmentHistory;
+import com.example.ewallet.entity.Portfolio;
+import com.example.ewallet.service.InvestmentService;
 import com.example.ewallet.service.InsuranceService;
 import com.example.ewallet.service.PaymentService;
 import com.example.ewallet.service.WalletService;
@@ -20,11 +24,13 @@ public class MainMenuRunner implements CommandLineRunner {
     private final WalletService walletService;
     private final InsuranceService insuranceService;
     private final PaymentService paymentService;    
+    private final InvestmentService investmentService;
 
-    public MainMenuRunner(WalletService walletService, InsuranceService insuranceService, PaymentService paymentService) {
+    public MainMenuRunner(WalletService walletService, InsuranceService insuranceService, PaymentService paymentService, InvestmentService investmentService) {
         this.walletService = walletService;
         this.insuranceService = insuranceService;
         this.paymentService = paymentService;
+        this.investmentService = investmentService;
     }
 
     @Override
@@ -51,6 +57,7 @@ public class MainMenuRunner implements CommandLineRunner {
                 System.out.println("1. Wallet Menu");
                 System.out.println("2. Payment Menu");
                 System.out.println("3. GOprotect Dashboard (Insurance)");
+                System.out.println("4. Investment Menu");
                 System.out.println("0. Exit");
                 System.out.print("Select Option: ");
 
@@ -60,11 +67,15 @@ public class MainMenuRunner implements CommandLineRunner {
                     case "1":
                         walletMenu(scanner, username);
                         break;
+                    case "2":
+                        paymentMenu(scanner, username); 
+                        break;
                     case "3":
                         insuranceMenu(scanner, username);
                         break;
-                    case "2":
-                        paymentMenu(scanner, username); 
+                    case "4":
+                        investmentService.initSampleFunds();
+                        investmentMenu(scanner, username);
                         break;
                     case "0":
                         running = false;
@@ -176,7 +187,7 @@ public class MainMenuRunner implements CommandLineRunner {
             }
         }
     }
-
+    
     private void paymentMenu(Scanner scanner, String username) {
         boolean inPayment = true;
         while (inPayment) {
@@ -191,6 +202,7 @@ public class MainMenuRunner implements CommandLineRunner {
             System.out.print("Select Option: ");
 
             String option = scanner.nextLine();
+
             switch (option) {
                 case "1": // Retail Payment
                     System.out.print("Enter Merchant Name: ");
@@ -275,4 +287,129 @@ public class MainMenuRunner implements CommandLineRunner {
             }
         }
     }
+
+    private void investmentMenu(Scanner scanner, String username) {
+        boolean inInvestment = true;
+        while (inInvestment) {
+            System.out.println("\nInvestment Menu");
+            System.out.println("1. View Available Funds");
+            System.out.println("2. Invest in a Fund (Buy)");
+            System.out.println("3. Sell Fund Units");
+            System.out.println("4. View Investment History");
+            System.out.println("5. View Portfolio & Returns");
+            System.out.println("6. Take Risk Assessment Quiz");
+            System.out.println("7. Simulate Market Flunctuations");
+            System.out.println("0. Back to Main Menu");
+            System.out.print("Select Option: ");
+
+            String option = scanner.nextLine();
+
+            switch (option) {
+                case "1":
+                    System.out.println(investmentService.getFormattedFundsTable(username));
+                    break;
+
+                case "2": // BUY FLOW
+                    System.out.println("\n--- SELECT A FUND TO BUY ---");
+                    System.out.println(investmentService.getFormattedFundsTable(username));
+                    System.out.print("Enter Fund Number (or 0 to cancel): ");
+                    try {
+                        int choice = Integer.parseInt(scanner.nextLine());
+                        if (choice == 0) break;
+
+                        Fund selected = investmentService.getFundByIndex(choice);
+                        System.out.printf("Current Price for %s: RM %.2f%n", selected.getName(), selected.getPrice());
+                        System.out.print("Enter Amount to Invest: RM ");
+                        double amount = Double.parseDouble(scanner.nextLine());
+                        
+                        InvestmentHistory res = investmentService.investInFund(username, selected.getFundId(), amount);
+                        System.out.printf("Success! You now own %.4f units of %s.%n", res.getUnits(), selected.getName());
+                    } catch (Exception e) { System.out.println("Error: " + e.getMessage()); }
+                    break;
+                
+                case "3": // SELL FLOW
+                    System.out.println("\n--- SELECT A FUND TO SELL ---");
+                    System.out.println(investmentService.getFormattedFundsTable(username));
+                    System.out.print("Enter Fund Number to Sell (or 0 to cancel): ");
+                    try {
+                        int sChoice = Integer.parseInt(scanner.nextLine());
+                        if (sChoice == 0) break;
+
+                        Fund toSell = investmentService.getFundByIndex(sChoice);
+                        
+                        System.out.print("Enter Units to Sell: ");
+                        double units = Double.parseDouble(scanner.nextLine());
+                        
+                        investmentService.sellFund(username, toSell.getFundId(), units);
+                        System.out.println("Sale processed. Money credited to your wallet.");
+                    } catch (Exception e) { System.out.println("Error: " + e.getMessage()); }
+                    break;
+
+                case "4": // HISTORY FLOW
+                    System.out.println(investmentService.getFormattedHistory(username));
+                    break;
+
+                case "5":
+                    String summary = investmentService.getPortfolioSummary(username);
+                    System.out.println(summary);
+                    break;
+
+                case "6":
+                    try {
+                        Portfolio currentPortfolio = investmentService.getUserPortfolio(username);
+                        if (currentPortfolio.getRiskCategory() != null) {
+                            System.out.println("\nYour current saved profile is: " + currentPortfolio.getRiskCategory());
+                            System.out.print("Would you like to retake the quiz? (Y/N): ");
+                            if (!scanner.nextLine().equalsIgnoreCase("Y")) break;
+                        }
+
+                        System.out.println("\n--- RISK ASSESSMENT QUIZ ---");
+                        int totalScore = 0;
+                        String[] questions = {
+                            "1. What is your investment goal?\n(1) Preserve Capital | (2) Balanced Growth | (3) Maximize Returns",
+                            "2. How do you react if your investment drops 10%?\n(1) Sell everything | (2) Do nothing | (3) Buy more",
+                            "3. What is your investment timeframe?\n(1) < 1 year | (2) 1-5 years | (3) 5+ years"
+                        };
+
+                        for (String q : questions) {
+                            int choice = 0;
+                            while (choice < 1 || choice > 3) {
+                                System.out.println(q);
+                                System.out.print("Your choice (1-3): ");
+                                try {
+                                    choice = Integer.parseInt(scanner.nextLine());
+                                    if (choice < 1 || choice > 3) {
+                                        System.out.println("Please enter only 1, 2, or 3.");
+                                    }
+                                } catch (NumberFormatException e) {
+                                    System.out.println("Invalid input. Please enter a number.");
+                                }
+                            }
+                            totalScore += choice;
+                        }
+
+                        // Call service to get the result
+                        String result = investmentService.evaluateRiskProfile(username, totalScore);
+                        System.out.println(result);
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid input! Please enter numbers (1, 2, or 3) only.");
+                    }
+                    break;
+
+                case "7": // Simulate Market
+                    System.out.println("\n--- SIMULATING MARKET FLUCTUATIONS ---");
+                    investmentService.simulateMarketChange();
+                    System.out.println("Market prices updated! Check your Portfolio (Option 5) to see the impact.");
+                    break;
+
+                case "0":
+                    inInvestment = false;
+                    break;
+                    
+                default:
+                    System.out.println("Invalid option, try again.");
+            }
+        }
+    }
+    
 }
