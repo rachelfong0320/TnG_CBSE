@@ -12,6 +12,7 @@ import com.example.ewallet.service.InvestmentService;
 import com.example.ewallet.service.InsuranceService;
 import com.example.ewallet.service.PaymentService;
 import com.example.ewallet.service.WalletService;
+import com.example.ewallet.service.NotificationService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -25,12 +26,14 @@ public class MainMenuRunner implements CommandLineRunner {
     private final InsuranceService insuranceService;
     private final PaymentService paymentService;    
     private final InvestmentService investmentService;
+    private final NotificationService notificationService;
 
-    public MainMenuRunner(WalletService walletService, InsuranceService insuranceService, PaymentService paymentService, InvestmentService investmentService) {
+    public MainMenuRunner(WalletService walletService, InsuranceService insuranceService, PaymentService paymentService, InvestmentService investmentService, NotificationService notificationService) {
         this.walletService = walletService;
         this.insuranceService = insuranceService;
         this.paymentService = paymentService;
         this.investmentService = investmentService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -53,11 +56,16 @@ public class MainMenuRunner implements CommandLineRunner {
             while (running) {
                 System.out.println("\n=== MAIN MENU ===");
                 double balance = walletService.getWallet(username).getBalance();
+                long unreadCount = notificationService.getUnreadCount(username);
                 System.out.printf("User: %s | Wallet Balance: RM %.2f%n", username, balance);
+                if (unreadCount > 0) {
+                    System.out.printf("[!] You have %d unread notification(s)%n", unreadCount);
+                }
                 System.out.println("1. Wallet Menu");
                 System.out.println("2. Payment Menu");
                 System.out.println("3. GOprotect Dashboard (Insurance)");
                 System.out.println("4. Investment Menu");
+                System.out.println("5. Notifications");
                 System.out.println("0. Exit");
                 System.out.print("Select Option: ");
 
@@ -76,6 +84,9 @@ public class MainMenuRunner implements CommandLineRunner {
                     case "4":
                         investmentService.initSampleFunds();
                         investmentMenu(scanner, username);
+                        break;
+                    case "5":
+                        notificationMenu(scanner, username);
                         break;
                     case "0":
                         running = false;
@@ -406,6 +417,72 @@ public class MainMenuRunner implements CommandLineRunner {
                     inInvestment = false;
                     break;
                     
+                default:
+                    System.out.println("Invalid option, try again.");
+            }
+        }
+    }
+
+    private void notificationMenu(Scanner scanner, String username) {
+        boolean inNotifications = true;
+        while (inNotifications) {
+            long unreadCount = notificationService.getUnreadCount(username);
+            System.out.println("\n--- NOTIFICATION CENTER ---");
+            System.out.printf("Unread Notifications: %d%n", unreadCount);
+            System.out.println("1. View All Notifications");
+            System.out.println("2. View Unread Notifications");
+            System.out.println("3. View Notification Summary");
+            System.out.println("4. Mark All as Read");
+            System.out.println("0. Back to Main Menu");
+            System.out.print("Select Option: ");
+
+            String option = scanner.nextLine();
+
+            switch (option) {
+                case "1":
+                    notificationService.displayNotifications(username);
+                    if (unreadCount > 0) {
+                        System.out.print("\nMark all as read? (y/n): ");
+                        String markRead = scanner.nextLine();
+                        if (markRead.equalsIgnoreCase("y")) {
+                            notificationService.markAllAsRead(username);
+                            System.out.println("All notifications marked as read.");
+                        }
+                    }
+                    break;
+
+                case "2":
+                    var unreadNotifs = notificationService.getUnreadNotifications(username);
+                    System.out.println("\n=== UNREAD NOTIFICATIONS ===");
+                    if (unreadNotifs.isEmpty()) {
+                        System.out.println("No unread notifications.");
+                    } else {
+                        for (int i = 0; i < unreadNotifs.size(); i++) {
+                            var notif = unreadNotifs.get(i);
+                            System.out.printf("%d. [%s] %s%n", i + 1, notif.getType(), 
+                                            notif.getTimestamp());
+                            System.out.printf("   %s%n", notif.getMessage());
+                        }
+                    }
+                    break;
+
+                case "3":
+                    notificationService.displayNotificationSummary(username);
+                    break;
+
+                case "4":
+                    if (unreadCount > 0) {
+                        notificationService.markAllAsRead(username);
+                        System.out.println("All notifications marked as read.");
+                    } else {
+                        System.out.println("No unread notifications to mark.");
+                    }
+                    break;
+
+                case "0":
+                    inNotifications = false;
+                    break;
+
                 default:
                     System.out.println("Invalid option, try again.");
             }

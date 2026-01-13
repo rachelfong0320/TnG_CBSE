@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.example.ewallet.entity.Fund;
@@ -22,17 +23,20 @@ public class InvestmentService {
 
     private final WalletService walletService; 
     private final PaymentService paymentService;
+    private final NotificationService notificationService;
 
     public InvestmentService(FundRepository fundRepository, 
                              InvestmentHistoryRepository investmentHistoryRepository, 
                              PortfolioRepository portfolioRepository, 
                              WalletService walletService,
-                             PaymentService paymentService) {
+                             PaymentService paymentService,
+                             @Lazy NotificationService notificationService) {
         this.fundRepository = fundRepository;
         this.investmentHistoryRepository = investmentHistoryRepository;
         this.portfolioRepository = portfolioRepository;
         this.walletService = walletService;
         this.paymentService = paymentService;
+        this.notificationService = notificationService;
     }
 
     public void initSampleFunds() {
@@ -80,6 +84,9 @@ public class InvestmentService {
 
                 updateUserPortfolio(username, fundId, investment.getUnits());
                 InvestmentHistory savedInvestment = investmentHistoryRepository.save(investment);
+
+                // Notify user about investment
+                notificationService.notifyInvestmentMade(username, fund.getName(), amount, investment.getUnits());
 
                 return savedInvestment;
             } catch (Exception e) {
@@ -301,43 +308,37 @@ public class InvestmentService {
     }
 
     public void simulateMarketChange() {
-        List<Fund> funds = fundRepository.findAll();
-        if (funds.isEmpty()) {
-            System.out.println("No funds available to simulate.");
-            return;
-        }
-
-        java.util.Random random = new java.util.Random();
-
-        for (Fund fund : funds) {
-            double volatility;
-            
-            // Assign volatility based on risk category
-            switch (fund.getRiskCategory().toLowerCase()) {
-                case "high":   volatility = 0.10; break; // +/- 10% movement
-                case "medium": volatility = 0.04; break; // +/- 4% movement
-                case "low":    volatility = 0.01; break; // +/- 1% movement
-                default:       volatility = 0.03;
-            }
-
-            // Calculate a random percentage: e.g., for High Risk, between -0.10 and +0.10
-            double changePercent = (random.nextDouble() * 2 * volatility) - volatility;
-            
-            double oldPrice = fund.getPrice();
-            double newPrice = oldPrice * (1 + changePercent);
-
-            // Ensure price never drops below a minimum
-            if (newPrice < 0.01) newPrice = 0.01;
-
-            // Update Fund price and NAV
-            fund.setPrice(newPrice);
-            fund.setNav(newPrice); 
-            fundRepository.save(fund);
-
-            System.out.printf("[Market] %s: RM %.2f -> RM %.2f (%.2f%%)%n", 
-                fund.getName(), oldPrice, newPrice, changePercent * 100);
-        }
+    List<Fund> funds = fundRepository.findAll();
+    if (funds.isEmpty()) {
+        System.out.println("No funds available to simulate.");
+        return;
     }
+
+    java.util.Random random = new java.util.Random();
+
+    for (Fund fund : funds) {
+        double volatility;
+        
+        switch (fund.getRiskCategory().toLowerCase()) {
+            case "high":   volatility = 0.10; break;
+            case "medium": volatility = 0.04; break;
+            case "low":    volatility = 0.01; break;
+            default:       volatility = 0.03;
+        }
+
+        double changePercent = (random.nextDouble() * 2 * volatility) - volatility;
+        double oldPrice = fund.getPrice();
+        double newPrice = oldPrice * (1 + changePercent);
+        if (newPrice < 0.01) newPrice = 0.01;
+
+        fund.setPrice(newPrice);
+        fund.setNav(newPrice);
+        fundRepository.save(fund);
+
+        System.out.printf("[Market] %s: RM %.2f -> RM %.2f (%.2f%%)%n", 
+            fund.getName(), oldPrice, newPrice, changePercent * 100);
+    }
+}
 
     // Create new funds
     public Fund createFund(String id, String name, String description, String riskCategory, double price) {

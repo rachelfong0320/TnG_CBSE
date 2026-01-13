@@ -6,6 +6,7 @@ import com.example.ewallet.entity.MotorPolicy;
 import com.example.ewallet.entity.TravelPolicy;
 import com.example.ewallet.repository.ClaimRepository;
 import com.example.ewallet.repository.PolicyRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import com.example.ewallet.service.PaymentService;
 
@@ -19,13 +20,16 @@ public class InsuranceService {
     private final PolicyRepository policyRepository;
     private final ClaimRepository claimRepository;
     private final PaymentService paymentService;
+    private final NotificationService notificationService;
 
     public InsuranceService(PolicyRepository policyRepository,
                             ClaimRepository claimRepository,
-                            PaymentService paymentService) {
+                            PaymentService paymentService,
+                            @Lazy NotificationService notificationService) {
         this.policyRepository = policyRepository;
         this.claimRepository = claimRepository;
         this.paymentService = paymentService;
+        this.notificationService = notificationService;
     }
 
     // Purchase Motor Insurance
@@ -84,6 +88,14 @@ public class InsuranceService {
 
         claimRepository.save(claim);
         System.out.println("Claim Submitted for Policy: " + policyId);
+        
+        // Get policy to determine type and username
+        Optional<BasePolicy> policy = policyRepository.findById(policyId);
+        if (policy.isPresent()) {
+            String username = policy.get().getUserId();
+            String policyType = policy.get().getPolicyType();
+            notificationService.notifyClaimUpdate(username, policyType, "Pending", amount);
+        }
     }
 
     // Get User Policies

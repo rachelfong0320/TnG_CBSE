@@ -6,6 +6,7 @@ import com.example.ewallet.entity.QRData;
 import com.example.ewallet.repository.AutoPayDataRepository;
 import com.example.ewallet.repository.PaymentDataRepository;
 import com.example.ewallet.repository.QRDataRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -18,15 +19,18 @@ public class PaymentService {
     private final QRDataRepository qrDataRepository;
     private final AutoPayDataRepository autoPayDataRepository;
     private final WalletService walletService;
+    private final NotificationService notificationService;
 
     public PaymentService(PaymentDataRepository paymentDataRepository,
                           QRDataRepository qrDataRepository,
                           AutoPayDataRepository autoPayDataRepository,
-                          WalletService walletService) {
+                          WalletService walletService,
+                          @Lazy NotificationService notificationService) {
         this.paymentDataRepository = paymentDataRepository;
         this.qrDataRepository = qrDataRepository;
         this.autoPayDataRepository = autoPayDataRepository;
         this.walletService = walletService;
+        this.notificationService = notificationService;
     }
 
     // 1. Process Retail Payment
@@ -35,8 +39,12 @@ public class PaymentService {
         PaymentData payment = new PaymentData(username, amount, merchantName, success ? "SUCCESS" : "FAILED");
         paymentDataRepository.save(payment);
         
-        if (success) System.out.println("Payment successful.");
-        else System.out.println("Payment failed: Insufficient funds.");
+        if (success) {
+            System.out.println("Payment successful.");
+            notificationService.notifyPaymentCompleted(username, merchantName, amount);
+        } else {
+            System.out.println("Payment failed: Insufficient funds.");
+        }
         
         return success;
     }
@@ -53,7 +61,12 @@ public class PaymentService {
                 QRData qr = new QRData(username, qrString, merchant, amount, success ? "SUCCESS" : "FAILED");
                 qrDataRepository.save(qr);
                 
-                System.out.println(success ? "QR Payment successful!" : "QR Payment failed: Insufficient funds.");
+                if (success) {
+                    System.out.println("QR Payment successful!");
+                    notificationService.notifyQRPayment(username, merchant, amount);
+                } else {
+                    System.out.println("QR Payment failed: Insufficient funds.");
+                }
             } else {
                 System.out.println("Invalid QR format.");
             }
@@ -69,6 +82,8 @@ public class PaymentService {
         System.out.println("AutoPay Setup Successfully!");
         System.out.println("Schedule: Deduct RM" + amount + " on Day " + billingDay + " of every month.");
         System.out.println("No funds have been deducted yet.");
+        notificationService.generateNotification(username, "AUTOPAY", 
+            String.format("AutoPay setup for %s - RM %.2f on day %d of each month", billerName, amount, billingDay));
     }
 
     // 4. Simulate Month Passing (Triggers the actual deduction)
@@ -100,8 +115,11 @@ public class PaymentService {
 
                 if (success) {
                     System.out.println(" [SUCCESS] Processed scheduled payment to " + ap.getRecipientId());
+                    notificationService.notifyAutoPayExecuted(username, ap.getRecipientId(), ap.getAmount());
                 } else {
                     System.out.println(" [FAILED] Could not process payment to " + ap.getRecipientId() + " (Insufficient Funds)");
+                    notificationService.generateNotification(username, "AUTOPAY", 
+                        String.format("AutoPay FAILED for %s - RM %.2f (Insufficient funds)", ap.getRecipientId(), ap.getAmount()));
                 }
             }
         }
