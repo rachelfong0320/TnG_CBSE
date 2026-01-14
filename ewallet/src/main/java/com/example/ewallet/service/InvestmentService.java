@@ -83,7 +83,7 @@ public class InvestmentService {
 
                 return savedInvestment;
             } catch (Exception e) {
-                walletService.addFunds(username, amount);
+                walletService.addMoney(username, amount);
                 throw new RuntimeException("System Error: Invest in fund failed. Your money is refunded.");
             }
         } else {
@@ -111,7 +111,7 @@ public class InvestmentService {
         portfolioRepository.save(portfolio);
 
         // 4. Return money to Wallet
-        walletService.addFunds(username, proceeds);
+        walletService.addMoney(username, proceeds);
         
         // 5. Log Transaction
         InvestmentHistory saleLog = new InvestmentHistory();

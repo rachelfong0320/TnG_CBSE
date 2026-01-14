@@ -8,12 +8,14 @@ public class User {
     @Id
     private String id;
     private String username;
+    private String phoneNumber;
 
     public User() {
     }
 
-    public User(String username) {
+    public User(String username, String phoneNumber) {
         this.username = username;
+        this.phoneNumber = phoneNumber;
     }
 
     // Getters and Setters
@@ -27,5 +29,13 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }
