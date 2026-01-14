@@ -53,8 +53,8 @@ class PaymentIntegrationTest {
         userRepository.deleteAll();
         paymentDataRepository.deleteAll();
 
-        userRepository.save(new User("user1"));
-        walletService.findOrCreateWallet("user1", 100.0);
+        userRepository.save(new User("user1", "0123456789"));
+        walletService.findOrCreateWallet("user1", "0123456789", 100.0);
     }
 
     @Test

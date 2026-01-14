@@ -5,6 +5,8 @@ import com.example.ewallet.entity.Wallet;
 import com.example.ewallet.repository.UserRepository;
 import com.example.ewallet.repository.WalletRepository;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,11 +20,11 @@ public class WalletService {
         this.walletRepository = walletRepository;
     }
 
-    public Wallet findOrCreateWallet(String username, double initialBalance) {
+    public Wallet findOrCreateWallet(String username, String phoneNumber, double initialBalance) {
 
         // Find or create user
-        User user = userRepository.findByUsername(username)
-                .orElseGet(() -> userRepository.save(new User(username)));
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .orElseGet(() -> userRepository.save(new User(username, phoneNumber)));
 
         // Find wallet by userId
         Wallet wallet = walletRepository.findByUserId(user.getId());
@@ -35,8 +37,8 @@ public class WalletService {
         return wallet;
     }
 
-    public Wallet getWallet(String username) {
-        return userRepository.findByUsername(username)
+    public Wallet getWallet(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber)
                 .map(user -> walletRepository.findByUserId(user.getId()))
                 .orElse(null);
     }
@@ -45,22 +47,25 @@ public class WalletService {
         return walletRepository.findAll();
     }
 
-    public Wallet addFunds(String username, double amount) {
-        Wallet wallet = getWallet(username);
+    public User getUserByPhoneNumber(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber).orElse(null);
+    }
+
+    public Wallet addMoney(String phoneNumber, double amount) {
+        Wallet wallet = getWallet(phoneNumber);
         if (wallet != null) {
             wallet.setBalance(wallet.getBalance() + amount);
+            wallet.addTransaction("TOP_UP", amount, "Added money");
             walletRepository.save(wallet);
             return wallet;
         } else {
-            System.out.println("User wallet not found: " + username);
+            System.out.println("User wallet not found: " + phoneNumber);
             return null;
         }
     }
 
-    // New content added by mingyang
-    // WalletService to handle the money deduction.
-    public boolean deductBalance(String username, double amount, String description) {
-        Wallet wallet = getWallet(username);
+    public boolean deductBalance(String phoneNumber, double amount, String description) {
+        Wallet wallet = getWallet(phoneNumber);
         if (wallet != null && wallet.getBalance() >= amount) {
             wallet.setBalance(wallet.getBalance() - amount);
             walletRepository.save(wallet);
@@ -68,4 +73,46 @@ public class WalletService {
         }
         return false;
     }
+
+    public boolean sendMoney(String senderPhoneNumber, String recipientPhoneNumber, double amount) {
+        Wallet senderWallet = getWallet(senderPhoneNumber);
+        if (senderWallet == null || senderWallet.getBalance() < amount) {
+            return false;
+        }
+
+        User senderUser = userRepository.findByPhoneNumber(senderPhoneNumber).orElse(null);
+        User recipientUser = userRepository.findByPhoneNumber(recipientPhoneNumber).orElse(null);
+        if (senderUser == null || recipientUser == null) {
+            return false;
+        }
+
+        Wallet recipientWallet = walletRepository.findByUserId(recipientUser.getId());
+        if (recipientWallet == null) {
+            return false;
+        }
+
+        // Prevent self-transfer
+        if (senderPhoneNumber.equals(recipientPhoneNumber)) {
+            return false;
+        }
+
+        senderWallet.setBalance(senderWallet.getBalance() - amount);
+        recipientWallet.setBalance(recipientWallet.getBalance() + amount);
+
+        senderWallet.addTransaction("SEND", amount,
+                "Sent to " + recipientUser.getUsername() + " (" + recipientPhoneNumber + ")");
+        recipientWallet.addTransaction("RECEIVE", amount,
+                "Received from " + senderUser.getUsername() + " (" + senderPhoneNumber + ")");
+
+        walletRepository.save(senderWallet);
+        walletRepository.save(recipientWallet);
+
+        return true;
+    }
+
+    public List<Wallet.Transaction> getTransactionHistory(String phoneNumber) {
+        Wallet wallet = getWallet(phoneNumber);
+        return wallet != null ? wallet.getTransactions() : List.of();
+    }
+
 }

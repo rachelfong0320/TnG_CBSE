@@ -111,8 +111,8 @@ public class PaymentService {
     // 5. Process Wallet Top-Up
     public void processTopUp(String username, double amount) {
         // 1. Call WalletService to actually add the money
-        // We assume walletService.addFunds returns the updated Wallet object or null
-        var result = walletService.addFunds(username, amount);
+        // We assume walletService.addMoney returns the updated Wallet object or null
+        var result = walletService.addMoney(username, amount);
 
         if (result != null) {
             // 2. If successful, log it in PaymentData
