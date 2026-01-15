@@ -89,7 +89,7 @@ public class InsuranceService {
         // The save method returns the saved object (including the generated ID).
         ClaimRecord savedClaim = claimRepository.save(claim);
 
-        System.out.println("Claim Submitted for Policy: " + policyId);
+        System.out.println("Claim Submitted for Policy: " + policyId + " (Status: Pending Review)");
 
 
         return savedClaim;
