@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 public class Notification {
     @Id
     private String id;
+    private String userId;
+    private String phoneNumber;
     private String username;
     private String type; // PAYMENT, WALLET, INVESTMENT, AUTOPAY, QR, FUND, CLAIM
     private String message;
@@ -22,8 +24,10 @@ public class Notification {
         this.read = false;
     }
 
-    public Notification(String username, String type, String message) {
+    public Notification(String userId, String username, String phoneNumber, String type, String message) {
+        this.userId = userId;
         this.username = username;
+        this.phoneNumber = phoneNumber;
         this.type = type;
         this.message = message;
         this.timestamp = LocalDateTime.now();

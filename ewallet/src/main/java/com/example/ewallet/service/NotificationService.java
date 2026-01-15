@@ -22,14 +22,14 @@ public class NotificationService {
     private final ClaimRepository claimRepository;
 
     public NotificationService(NotificationRepository notificationRepository,
-                               AutoPayDataRepository autoPayDataRepository,
-                               PaymentDataRepository paymentDataRepository,
-                               QRDataRepository qrDataRepository,
-                               WalletRepository walletRepository,
-                               UserRepository userRepository,
-                               FundRepository fundRepository,
-                               InvestmentHistoryRepository investmentHistoryRepository,
-                               ClaimRepository claimRepository) {
+            AutoPayDataRepository autoPayDataRepository,
+            PaymentDataRepository paymentDataRepository,
+            QRDataRepository qrDataRepository,
+            WalletRepository walletRepository,
+            UserRepository userRepository,
+            FundRepository fundRepository,
+            InvestmentHistoryRepository investmentHistoryRepository,
+            ClaimRepository claimRepository) {
         this.notificationRepository = notificationRepository;
         this.autoPayDataRepository = autoPayDataRepository;
         this.paymentDataRepository = paymentDataRepository;
@@ -41,125 +41,44 @@ public class NotificationService {
         this.claimRepository = claimRepository;
     }
 
-    public void generateNotification(String username, String type, String details) {
-        Notification notification = new Notification(username, type, details);
-        notificationRepository.save(notification);
+    private User getUserByPhoneNumber(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber).orElse(null);
     }
 
-    public String getAutoPayStatus(String username) {
-        List<AutoPayData> autoPayList = autoPayDataRepository.findByUserId(username);
-        if (autoPayList.isEmpty()) {
-            return "No AutoPay setup";
+    private String getUserId(String phoneNumber) {
+        User user = getUserByPhoneNumber(phoneNumber);
+        return user != null ? user.getId() : null;
+    }
+
+    public void generateNotification(String phoneNumber, String type, String message) {
+        User user = getUserByPhoneNumber(phoneNumber);
+        if (user != null) {
+            Notification notification = new Notification(user.getId(), user.getUsername(), phoneNumber, type, message);
+            notificationRepository.save(notification);
         }
-        return autoPayList.size() + " active AutoPay(s)";
     }
 
-    public String getPaymentStatus(String username) {
-        List<PaymentData> payments = paymentDataRepository.findByUserId(username);
-        if (payments.isEmpty()) {
-            return "No payments made";
-        }
-        PaymentData latestPayment = payments.get(payments.size() - 1);
-        return "Last payment: RM " + String.format("%.2f", latestPayment.getAmount()) + 
-               " to " + latestPayment.getRecipientId() + " - " + latestPayment.getStatus();
+    public List<Notification> getAllNotifications(String phoneNumber) {
+        User user = getUserByPhoneNumber(phoneNumber);
+        if (user == null)
+            return List.of();
+        return notificationRepository.findByUserIdOrderByTimestampAsc(user.getId());
     }
 
-    public String getQRPaymentStatus(String username) {
-        List<QRData> qrPayments = qrDataRepository.findByUserId(username);
-        if (qrPayments.isEmpty()) {
-            return "No QR payments made";
-        }
-        return qrPayments.size() + " QR payment(s) made";
+    public List<Notification> getUnreadNotifications(String phoneNumber) {
+        User user = getUserByPhoneNumber(phoneNumber);
+        if (user == null)
+            return List.of();
+        return notificationRepository.findByUserIdAndReadOrderByTimestampDesc(user.getId(), false);
     }
 
-    public Double getWalletBalance(String username) {
-        return userRepository.findByUsername(username)
-                .map(user -> walletRepository.findByUserId(user.getId()))
-                .map(wallet -> wallet.getBalance())
-                .orElse(0.0);
+    public long getUnreadCount(String phoneNumber) {
+        User user = getUserByPhoneNumber(phoneNumber);
+        if (user == null)
+            return 0;
+        return notificationRepository.countByUserIdAndRead(user.getId(), false);
     }
 
-    public Double getFundPrice(String fundName) {
-        return fundRepository.findByName(fundName)
-                .map(Fund::getPrice)
-                .orElse(0.0);
-    }
-
-    public String getInvestmentStatus(String username) {
-        List<InvestmentHistory> investments = investmentHistoryRepository.findByUserId(username);
-        if (investments.isEmpty()) {
-            return "No investments made";
-        }
-        double totalInvested = investments.stream()
-                .mapToDouble(InvestmentHistory::getAmount)
-                .sum();
-        return investments.size() + " investment(s), Total: RM " + String.format("%.2f", totalInvested);
-    }
-
-    public String getClaimStatus(String username) {
-        List<ClaimRecord> allClaims = claimRepository.findAll();
-        if (allClaims.isEmpty()) {
-            return "No claims filed";
-        }
-        ClaimRecord latestClaim = allClaims.get(allClaims.size() - 1);
-        return "Last claim: " + latestClaim.getStatus() + " - RM " + 
-               String.format("%.2f", latestClaim.getAmount());
-    }
-
-    public void notifyPaymentCompleted(String username, String recipient, double amount) {
-        String message = String.format("Payment of RM %.2f to %s completed successfully", amount, recipient);
-        generateNotification(username, "PAYMENT", message);
-    }
-
-    public void notifyLowBalance(String username, double balance) {
-        String message = String.format("Low wallet balance alert! Current balance: RM %.2f", balance);
-        generateNotification(username, "WALLET", message);
-    }
-
-    public void notifyAutoPayExecuted(String username, String service, double amount) {
-        String message = String.format("AutoPay executed: RM %.2f paid to %s", amount, service);
-        generateNotification(username, "AUTOPAY", message);
-    }
-
-    public void notifyQRPayment(String username, String merchant, double amount) {
-        String message = String.format("QR payment of RM %.2f to %s successful", amount, merchant);
-        generateNotification(username, "QR", message);
-    }
-
-    public void notifyInvestmentMade(String username, String fundName, double amount, double units) {
-        String message = String.format("Invested RM %.2f in %s (%.4f units)", amount, fundName, units);
-        generateNotification(username, "INVESTMENT", message);
-    }
-
-    public void notifyFundPriceChange(String username, String fundName, double oldPrice, double newPrice) {
-        double change = ((newPrice - oldPrice) / oldPrice) * 100;
-        String message = String.format("Fund %s price changed: RM %.2f to RM %.2f (%.2f%%)", 
-                                      fundName, oldPrice, newPrice, change);
-        generateNotification(username, "FUND", message);
-    }
-
-    public void notifyClaimUpdate(String username, String policyType, String status, double amount) {
-        String message = String.format("Claim update: %s claim for RM %.2f - Status: %s", 
-                                      policyType, amount, status);
-        generateNotification(username, "CLAIM", message);
-    }
-
-    // Get all notifications for a user (oldest first, newest last)
-    public List<Notification> getAllNotifications(String username) {
-        return notificationRepository.findByUsernameOrderByTimestampAsc(username);
-    }
-
-    // Get unread notifications
-    public List<Notification> getUnreadNotifications(String username) {
-        return notificationRepository.findByUsernameAndReadOrderByTimestampDesc(username, false);
-    }
-
-    // Get unread count
-    public long getUnreadCount(String username) {
-        return notificationRepository.countByUsernameAndRead(username, false);
-    }
-
-    // Mark notification as read
     public void markAsRead(String notificationId) {
         notificationRepository.findById(notificationId).ifPresent(notification -> {
             notification.setRead(true);
@@ -167,19 +86,119 @@ public class NotificationService {
         });
     }
 
-    // Mark all as read
-    public void markAllAsRead(String username) {
-        List<Notification> unreadNotifications = getUnreadNotifications(username);
-        unreadNotifications.forEach(notification -> {
+    public void markAllAsRead(String phoneNumber) {
+        getUnreadNotifications(phoneNumber).forEach(notification -> {
             notification.setRead(true);
             notificationRepository.save(notification);
         });
     }
 
-    // Display all notifications (console version)
-    public void displayNotifications(String username) {
-        List<Notification> notifications = getAllNotifications(username);
-        long unreadCount = getUnreadCount(username);
+    public String getAutoPayStatus(String phoneNumber) {
+        String userId = getUserId(phoneNumber);
+        if (userId == null)
+            return "User not found";
+        List<AutoPayData> autoPayList = autoPayDataRepository.findByUserId(userId);
+        if (autoPayList.isEmpty())
+            return "No AutoPay setup";
+        return autoPayList.size() + " active AutoPay(s)";
+    }
+
+    public String getPaymentStatus(String phoneNumber) {
+        String userId = getUserId(phoneNumber);
+        if (userId == null)
+            return "User not found";
+        List<PaymentData> payments = paymentDataRepository.findByUserId(userId);
+        if (payments.isEmpty())
+            return "No payments made";
+        PaymentData latest = payments.get(payments.size() - 1);
+        return String.format("Last payment: RM %.2f to %s - %s", latest.getAmount(), latest.getRecipientId(),
+                latest.getStatus());
+    }
+
+    public String getQRPaymentStatus(String phoneNumber) {
+        String userId = getUserId(phoneNumber);
+        if (userId == null)
+            return "User not found";
+        List<QRData> qrPayments = qrDataRepository.findByUserId(userId);
+        if (qrPayments.isEmpty())
+            return "No QR payments made";
+        return qrPayments.size() + " QR payment(s) made";
+    }
+
+    public Double getWalletBalance(String phoneNumber) {
+        String userId = getUserId(phoneNumber);
+        if (userId == null)
+            return 0.0;
+        Wallet wallet = walletRepository.findByUserId(userId);
+        return wallet != null ? wallet.getBalance() : 0.0;
+    }
+
+    public String getInvestmentStatus(String phoneNumber) {
+        String userId = getUserId(phoneNumber);
+        if (userId == null)
+            return "User not found";
+        List<InvestmentHistory> investments = investmentHistoryRepository.findByUserId(userId);
+        if (investments.isEmpty())
+            return "No investments made";
+        double total = investments.stream().mapToDouble(InvestmentHistory::getAmount).sum();
+        return String.format("%d investment(s), Total: RM %.2f", investments.size(), total);
+    }
+
+    public String getClaimStatus(String phoneNumber) {
+        String userId = getUserId(phoneNumber);
+        if (userId == null)
+            return "User not found";
+        List<ClaimRecord> allClaims = claimRepository.findAll();
+        if (allClaims.isEmpty())
+            return "No claims filed";
+        ClaimRecord latest = allClaims.get(allClaims.size() - 1);
+        return String.format("Last claim: %s - RM %.2f", latest.getStatus(), latest.getAmount());
+    }
+
+    public Double getFundPrice(String fundName) {
+        return fundRepository.findByName(fundName).map(Fund::getPrice).orElse(0.0);
+    }
+
+    public void notifyPaymentCompleted(String phoneNumber, String recipient, double amount) {
+        String message = String.format("Payment of RM %.2f to %s completed successfully", amount, recipient);
+        generateNotification(phoneNumber, "PAYMENT", message);
+    }
+
+    public void notifyLowBalance(String phoneNumber, double balance) {
+        String message = String.format("Low wallet balance alert! Current balance: RM %.2f", balance);
+        generateNotification(phoneNumber, "WALLET", message);
+    }
+
+    public void notifyAutoPayExecuted(String phoneNumber, String service, double amount) {
+        String message = String.format("AutoPay executed: RM %.2f paid to %s", amount, service);
+        generateNotification(phoneNumber, "AUTOPAY", message);
+    }
+
+    public void notifyQRPayment(String phoneNumber, String merchant, double amount) {
+        String message = String.format("QR payment of RM %.2f to %s successful", amount, merchant);
+        generateNotification(phoneNumber, "QR", message);
+    }
+
+    public void notifyInvestmentMade(String phoneNumber, String fundName, double amount, double units) {
+        String message = String.format("Invested RM %.2f in %s (%.4f units)", amount, fundName, units);
+        generateNotification(phoneNumber, "INVESTMENT", message);
+    }
+
+    public void notifyFundPriceChange(String phoneNumber, String fundName, double oldPrice, double newPrice) {
+        double change = ((newPrice - oldPrice) / oldPrice) * 100;
+        String message = String.format("Fund %s price changed: RM %.2f -> RM %.2f (%.2f%%)", fundName, oldPrice,
+                newPrice, change);
+        generateNotification(phoneNumber, "FUND", message);
+    }
+
+    public void notifyClaimUpdate(String phoneNumber, String policyType, String status, double amount) {
+        String message = String.format("Claim update: %s claim for RM %.2f - Status: %s", policyType, amount, status);
+        generateNotification(phoneNumber, "CLAIM", message);
+    }
+
+    public void displayNotifications(String phoneNumber) {
+        List<Notification> notifications = getAllNotifications(phoneNumber);
+        long unreadCount = getUnreadCount(phoneNumber);
 
         System.out.println("\n=== NOTIFICATIONS ===");
         System.out.printf("Total: %d | Unread: %d%n", notifications.size(), unreadCount);
@@ -194,20 +213,19 @@ public class NotificationService {
         for (int i = 0; i < notifications.size(); i++) {
             Notification notif = notifications.get(i);
             String readStatus = notif.isRead() ? "[ ]" : "[*]";
-            System.out.printf("%d. %s [%s] %s%n", i + 1, readStatus, notif.getType(), 
-                            notif.getTimestamp().format(formatter));
+            System.out.printf("%d. %s [%s] %s%n", i + 1, readStatus, notif.getType(),
+                    notif.getTimestamp().format(formatter));
             System.out.printf("   %s%n", notif.getMessage());
         }
     }
 
-    // Get notification summary for dashboard
-    public void displayNotificationSummary(String username) {
+    public void displayNotificationSummary(String phoneNumber) {
         System.out.println("\n--- Notification Summary ---");
-        System.out.println("AutoPay Status: " + getAutoPayStatus(username));
-        System.out.println("Payment Status: " + getPaymentStatus(username));
-        System.out.println("QR Payment Status: " + getQRPaymentStatus(username));
-        System.out.printf("Wallet Balance: RM %.2f%n", getWalletBalance(username));
-        System.out.println("Investment Status: " + getInvestmentStatus(username));
-        System.out.println("Claim Status: " + getClaimStatus(username));
+        System.out.println("AutoPay Status: " + getAutoPayStatus(phoneNumber));
+        System.out.println("Payment Status: " + getPaymentStatus(phoneNumber));
+        System.out.println("QR Payment Status: " + getQRPaymentStatus(phoneNumber));
+        System.out.printf("Wallet Balance: RM %.2f%n", getWalletBalance(phoneNumber));
+        System.out.println("Investment Status: " + getInvestmentStatus(phoneNumber));
+        System.out.println("Claim Status: " + getClaimStatus(phoneNumber));
     }
 }
