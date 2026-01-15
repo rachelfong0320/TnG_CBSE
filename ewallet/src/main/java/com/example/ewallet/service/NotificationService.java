@@ -94,20 +94,20 @@ public class NotificationService {
     }
 
     public String getAutoPayStatus(String phoneNumber) {
-        String userId = getUserId(phoneNumber);
-        if (userId == null)
+        User user = getUserByPhoneNumber(phoneNumber);
+        if (user == null)
             return "User not found";
-        List<AutoPayData> autoPayList = autoPayDataRepository.findByUserId(userId);
+        List<AutoPayData> autoPayList = autoPayDataRepository.findByUserId(user.getUsername());
         if (autoPayList.isEmpty())
             return "No AutoPay setup";
         return autoPayList.size() + " active AutoPay(s)";
     }
 
     public String getPaymentStatus(String phoneNumber) {
-        String userId = getUserId(phoneNumber);
-        if (userId == null)
+        User user = getUserByPhoneNumber(phoneNumber);
+        if (user == null)
             return "User not found";
-        List<PaymentData> payments = paymentDataRepository.findByUserId(userId);
+        List<PaymentData> payments = paymentDataRepository.findByUserId(user.getUsername());
         if (payments.isEmpty())
             return "No payments made";
         PaymentData latest = payments.get(payments.size() - 1);
@@ -116,10 +116,10 @@ public class NotificationService {
     }
 
     public String getQRPaymentStatus(String phoneNumber) {
-        String userId = getUserId(phoneNumber);
-        if (userId == null)
+        User user = getUserByPhoneNumber(phoneNumber);
+        if (user == null)
             return "User not found";
-        List<QRData> qrPayments = qrDataRepository.findByUserId(userId);
+        List<QRData> qrPayments = qrDataRepository.findByUserId(user.getUsername());
         if (qrPayments.isEmpty())
             return "No QR payments made";
         return qrPayments.size() + " QR payment(s) made";
