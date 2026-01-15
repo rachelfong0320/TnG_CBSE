@@ -21,20 +21,17 @@ public class InvestmentService {
     private final InvestmentHistoryRepository investmentHistoryRepository;
     private final PortfolioRepository portfolioRepository;
 
-    private final WalletService walletService; 
     private final PaymentService paymentService;
     private final NotificationService notificationService;
 
     public InvestmentService(FundRepository fundRepository, 
                              InvestmentHistoryRepository investmentHistoryRepository, 
                              PortfolioRepository portfolioRepository, 
-                             WalletService walletService,
                              PaymentService paymentService,
                              @Lazy NotificationService notificationService) {
         this.fundRepository = fundRepository;
         this.investmentHistoryRepository = investmentHistoryRepository;
         this.portfolioRepository = portfolioRepository;
-        this.walletService = walletService;
         this.paymentService = paymentService;
         this.notificationService = notificationService;
     }
@@ -42,10 +39,10 @@ public class InvestmentService {
     public void initSampleFunds() {
         if (fundRepository.count() == 0) {
             System.out.println("[System] Populating sample funds...");
-            createFund("F01", "Low Risk Income Fund", "Focuses on government bonds and steady interest.", "Low", 1.00);
-            createFund("F02", "Balanced Global Fund", "Diversified across international stocks and bonds.", "Medium", 2.50);
-            createFund("F03", "Equity Growth Fund", "High-growth potential targeting tech and emerging markets.", "High", 5.75);
-            createFund("F04", "Digital Assets Fund", "Invests in blockchain infrastructure and crypto-assets.", "High", 10.20);
+            createFund("F01", "Low Risk Income Fund", "Focuses on government bonds and steady interest.", "Low", 1.0000);
+            createFund("F02", "Balanced Global Fund", "Diversified across international stocks and bonds.", "Medium", 2.5000);
+            createFund("F03", "Equity Growth Fund", "High-growth potential targeting tech and emerging markets.", "High", 5.7500);
+            createFund("F04", "Digital Assets Fund", "Invests in blockchain infrastructure and crypto-assets.", "High", 10.2000);
             
             System.out.println("[System] Sample funds initialized.");
         }
@@ -90,7 +87,7 @@ public class InvestmentService {
 
                 return savedInvestment;
             } catch (Exception e) {
-                walletService.addMoney(username, amount);
+                paymentService.processTopUp(phoneNumber, username, amount);
                 throw new RuntimeException("System Error: Invest in fund failed. Your money is refunded.");
             }
         } else {
@@ -99,7 +96,7 @@ public class InvestmentService {
     }
 
     // SELL FUND: Liquidates units, updates portfolio, and adds money back to wallet 
-    public void sellFund(String username, String fundId, double unitsToSell) {
+    public void sellFund(String phoneNumber, String username, String fundId, double unitsToSell) {
         // 1. Validate User Portfolio
         Portfolio portfolio = portfolioRepository.findByUserId(username)
                 .orElseThrow(() -> new RuntimeException("Portfolio not found for user."));
@@ -118,7 +115,7 @@ public class InvestmentService {
         portfolioRepository.save(portfolio);
 
         // 4. Return money to Wallet
-        walletService.addMoney(username, proceeds);
+        paymentService.processTopUp(phoneNumber, username, proceeds);
         
         // 5. Log Transaction
         InvestmentHistory saleLog = new InvestmentHistory();
@@ -189,17 +186,17 @@ public class InvestmentService {
         Portfolio portfolio = portfolioRepository.findByUserId(username).orElse(new Portfolio());
 
         StringBuilder sb = new StringBuilder();
-        sb.append("\n--------------------------------------------------------------------------------\n");
-        sb.append(String.format("%-3s | %-6s | %-25s | %-8s | %-6s | %-10s%n", "#", "ID", "FUND NAME", "PRICE", "RISK", "MY UNITS"));
-        sb.append("--------------------------------------------------------------------------------\n");
+        sb.append("\n----------------------------------------------------------------------------\n");
+        sb.append(String.format("%-3s | %-6s | %-25s | %-8s | %-6s | %-10s%n", "#", "ID", "FUND NAME", "NAV (RM)", "RISK", "MY UNITS"));
+        sb.append("----------------------------------------------------------------------------\n");
         for (int i = 0; i < funds.size(); i++) {
             Fund f = funds.get(i);
             double ownedUnits = portfolio.getUnitsForFund(f.getFundId());
 
-            sb.append(String.format("%-3d | %-6s | %-25s | RM %-6.2f | %-6s | %-10.4f%n", 
+            sb.append(String.format("%-3d | %-6s | %-25s | %8.4f | %-6s | %10.4f%n", 
                 (i + 1), f.getFundId(), f.getName(), f.getPrice(), f.getRiskCategory(), ownedUnits));
         }
-        sb.append("--------------------------------------------------------------------------------");
+        sb.append("----------------------------------------------------------------------------");
         return sb.toString();
     }
 
