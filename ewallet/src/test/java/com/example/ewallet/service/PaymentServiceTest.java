@@ -45,7 +45,7 @@ class PaymentServiceTest {
         when(walletService.deductBalance(anyString(), anyDouble(), anyString())).thenReturn(true);
 
         // Test Steps: Call processPayment
-        boolean result = paymentService.processPayment("user1", 50.0, "Tesco");
+        boolean result = paymentService.processPayment("0122222222", "user1", 50.0, "Tesco");
 
         // Expected Result: Method returns true
         assertTrue(result, "Payment should be successful");
@@ -68,7 +68,7 @@ class PaymentServiceTest {
         when(walletService.deductBalance(anyString(), anyDouble(), anyString())).thenReturn(false);
 
         // Test Steps: Call processPayment
-        boolean result = paymentService.processPayment("user1", 5000.0, "Ferrari");
+        boolean result = paymentService.processPayment("0122222222", "user1", 5000.0, "Ferrari");
 
         // Expected Result: Method returns false
         assertFalse(result, "Payment should fail");
@@ -90,7 +90,7 @@ class PaymentServiceTest {
         when(walletService.deductBalance(anyString(), anyDouble(), anyString())).thenReturn(true);
 
         // Test Steps
-        paymentService.processQRPayment("user1", "Starbucks:15.50");
+        paymentService.processQRPayment("0122222222", "user1", "Starbucks:15.50");
 
         // Verify parsing logic & save
         ArgumentCaptor<QRData> qrCaptor = ArgumentCaptor.forClass(QRData.class);
@@ -106,7 +106,7 @@ class PaymentServiceTest {
         clearInvocations(qrDataRepository);
 
         // Test Steps
-        paymentService.processQRPayment("user1", "Starbucks.15.50");
+        paymentService.processQRPayment("0122222222", "user1", "Starbucks.15.50");
 
         // Verify: Repository should NOT save anything
         verify(qrDataRepository, never()).save(any(QRData.class));
@@ -123,7 +123,7 @@ class PaymentServiceTest {
         when(walletService.deductBalance(anyString(), anyDouble(), anyString())).thenReturn(true);
 
         // Test Steps
-        paymentService.simulateAutoPayExecution("user1", "January");
+        paymentService.simulateAutoPayExecution("0122222222", "user1", "January");
 
         // Verify walletService.deductBalance is called
         verify(walletService).deductBalance(eq("user1"), eq(100.0), contains("AutoPay"));
