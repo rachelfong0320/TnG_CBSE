@@ -34,8 +34,8 @@ public class PaymentService {
     }
 
     // 1. Process Retail Payment
-    public boolean processPayment(String username, double amount, String merchantName) {
-        boolean success = walletService.deductBalance(username, amount, "Payment to " + merchantName);
+    public boolean processPayment(String phoneNumber, String username, double amount, String merchantName) {
+        boolean success = walletService.deductBalance(phoneNumber, amount, "Payment to " + merchantName);
         PaymentData payment = new PaymentData(username, amount, merchantName, success ? "SUCCESS" : "FAILED");
         paymentDataRepository.save(payment);
         
@@ -50,14 +50,14 @@ public class PaymentService {
     }
 
     // 2. Process QR Payment
-    public void processQRPayment(String username, String qrString) {
+    public void processQRPayment(String phoneNumber, String username, String qrString) {
         try {
             String[] parts = qrString.split(":");
             if (parts.length == 2) {
                 String merchant = parts[0];
                 double amount = Double.parseDouble(parts[1]);
                 
-                boolean success = walletService.deductBalance(username, amount, "QR Pay: " + merchant);
+                boolean success = walletService.deductBalance(phoneNumber, amount, "QR Pay: " + merchant);
                 QRData qr = new QRData(username, qrString, merchant, amount, success ? "SUCCESS" : "FAILED");
                 qrDataRepository.save(qr);
                 
@@ -87,7 +87,7 @@ public class PaymentService {
     }
 
     // 4. Simulate Month Passing (Triggers the actual deduction)
-    public void simulateAutoPayExecution(String username, String currentMonthStr) {
+    public void simulateAutoPayExecution(String phoneNumber, String username, String currentMonthStr) {
         System.out.println("\n--- Simulating AutoPay Run for " + currentMonthStr + " ---");
         
         List<AutoPayData> myAutoPays = autoPayDataRepository.findByUserId(username);
@@ -102,7 +102,7 @@ public class PaymentService {
                 String desc = "AutoPay (" + currentMonthStr + ") to " + ap.getRecipientId();
                 
                 // Attempt Deduction
-                boolean success = walletService.deductBalance(username, ap.getAmount(), desc);
+                boolean success = walletService.deductBalance(phoneNumber, ap.getAmount(), desc);
                 
                 // Update Last Executed Date
                 ap.setLastExecuted(new Date());
@@ -127,10 +127,10 @@ public class PaymentService {
     }
 
     // 5. Process Wallet Top-Up
-    public void processTopUp(String username, double amount) {
+    public void processTopUp(String phoneNumber, String username, double amount) {
         // 1. Call WalletService to actually add the money
-        // We assume walletService.addFunds returns the updated Wallet object or null
-        var result = walletService.addFunds(username, amount);
+        // We assume walletService.addMoney returns the updated Wallet object or null
+        var result = walletService.addMoney(phoneNumber, amount);
 
         if (result != null) {
             // 2. If successful, log it in PaymentData

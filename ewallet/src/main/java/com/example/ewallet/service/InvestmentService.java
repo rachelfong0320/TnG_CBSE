@@ -64,12 +64,12 @@ public class InvestmentService {
     }
 
     // Buying funds
-    public InvestmentHistory investInFund(String username, String fundId, double amount) {
+    public InvestmentHistory investInFund(String phoneNumber, String username, String fundId, double amount) {
         // Validate Fund
         Fund fund = fundRepository.findById(fundId)
                 .orElseThrow(() -> new RuntimeException("Fund not found with ID: " + fundId));
 
-        boolean paymentSuccessful = paymentService.processPayment(username, amount, "Investment: " + fund.getName());
+        boolean paymentSuccessful = paymentService.processPayment(phoneNumber, username, amount, "Investment: " + fund.getName());
 
         if (paymentSuccessful) {
             try {
@@ -90,7 +90,7 @@ public class InvestmentService {
 
                 return savedInvestment;
             } catch (Exception e) {
-                walletService.addFunds(username, amount);
+                walletService.addMoney(username, amount);
                 throw new RuntimeException("System Error: Invest in fund failed. Your money is refunded.");
             }
         } else {
@@ -118,7 +118,7 @@ public class InvestmentService {
         portfolioRepository.save(portfolio);
 
         // 4. Return money to Wallet
-        walletService.addFunds(username, proceeds);
+        walletService.addMoney(username, proceeds);
         
         // 5. Log Transaction
         InvestmentHistory saleLog = new InvestmentHistory();

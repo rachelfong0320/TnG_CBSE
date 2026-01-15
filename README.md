@@ -1,43 +1,66 @@
 # TnG_CBSE
-## **How to start**
-## 1. Clone the repository and switch to your branch
+
+## How to Start (Run Locally)
+
+### 1. Clone the Repository and Switch to Your Branch
+
+```bash
 git clone <your-repo-url>
-
+cd TnG_CBSE
 git checkout <your-branch-name>
-
 cd ewallet
+```
 
+### 2. Start MongoDB
 
-## 2. Start MongoDB
-### Mac (Homebrew):
+The application requires MongoDB running at:
 
+```
+mongodb://localhost:27017
+```
+
+#### macOS (Homebrew)
+
+```bash
 brew tap mongodb/brew
-
 brew install mongodb-community
-
 brew services start mongodb-community
+```
 
+Check MongoDB status:
 
-Check status:
-
+```bash
 brew services list
+```
 
-### Windows:
+#### Windows
 
-Download and install MongoDB Community Server from:
-https://www.mongodb.com/try/download/community
+1. Download MongoDB Community Server:
+   [https://www.mongodb.com/try/download/community](https://www.mongodb.com/try/download/community)
 
-During installation, optionally select “Install MongoDB as a Service” for automatic startup.
+2. During installation, you may select:
+   **“Install MongoDB as a Service”** (recommended)
 
-Manual start (if not installed as a service):
+##### Manual Start (if not installed as a service)
 
-mkdir C:\data\db       # create data folder if it doesn't exist
+```bash
+mkdir C:\data\db
 "C:\Program Files\MongoDB\Server\<version>\bin\mongod.exe"
+```
 
+> Keep this terminal open. MongoDB will run at `localhost:27017`.
 
-Keep this terminal open — MongoDB will run on localhost:27017.
+### 3. Run the Spring Boot Application
 
-## 3. Run the Spring Boot application
+From the project root:
+
+```bash
 cd ewallet
-
 mvn spring-boot:run
+```
+
+Once started, the application should be running on:
+
+```
+http://localhost:8080
+```
