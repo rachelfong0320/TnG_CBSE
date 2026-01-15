@@ -60,12 +60,12 @@ public class InvestmentService {
     }
 
     // Buying funds
-    public InvestmentHistory investInFund(String username, String fundId, double amount) {
+    public InvestmentHistory investInFund(String phoneNumber, String username, String fundId, double amount) {
         // Validate Fund
         Fund fund = fundRepository.findById(fundId)
                 .orElseThrow(() -> new RuntimeException("Fund not found with ID: " + fundId));
 
-        boolean paymentSuccessful = paymentService.processPayment(username, amount, "Investment: " + fund.getName());
+        boolean paymentSuccessful = paymentService.processPayment(phoneNumber, username, amount, "Investment: " + fund.getName());
 
         if (paymentSuccessful) {
             try {

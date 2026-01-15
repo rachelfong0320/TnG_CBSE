@@ -60,12 +60,13 @@ class PaymentIntegrationTest {
     @Test
     void testPurchaseUpdatesWallet_Integration() {
         // Test Data
+        String phoneNumber = "0122222222";
         String username = "user1";
         double purchaseAmount = 40.0;
         String merchant = "Tesco";
 
         // 1. Run the logic
-        boolean success = paymentService.processPayment(username, purchaseAmount, merchant);
+        boolean success = paymentService.processPayment(phoneNumber, username, purchaseAmount, merchant);
 
         // 2. Verify success
         assertTrue(success, "Payment should succeed");

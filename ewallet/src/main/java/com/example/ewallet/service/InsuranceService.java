@@ -29,10 +29,10 @@ public class InsuranceService {
     }
 
     // Purchase Motor Insurance
-    public void purchaseMotorPolicy(String username, String plateNo, String model) {
+    public void purchaseMotorPolicy(String phoneNumber, String username, String plateNo, String model) {
         double price = 500.0;
 
-        boolean paymentSuccess = paymentService.processPayment(username, price, "Purchase Motor Insurance");
+        boolean paymentSuccess = paymentService.processPayment(phoneNumber, username, price, "Purchase Motor Insurance");
 
         if (paymentSuccess) {
             MotorPolicy policy = new MotorPolicy();
@@ -54,10 +54,10 @@ public class InsuranceService {
     }
 
     // Purchase Travel Insurance
-    public void purchaseTravelPolicy(String username, String destination, int pax) {
+    public void purchaseTravelPolicy(String phoneNumber, String username, String destination, int pax) {
         double price = 80.0 * pax;
 
-        if (paymentService.processPayment(username, price, "Purchase Travel Insurance")) {
+        if (paymentService.processPayment(phoneNumber, username, price, "Purchase Travel Insurance")) {
             TravelPolicy policy = new TravelPolicy();
             policy.setUserId(username);
             policy.setStatus("Active");

@@ -77,14 +77,14 @@ public class MainMenuRunner implements CommandLineRunner {
                         walletMenu(scanner, phoneNumber, username);
                         break;
                     case "2":
-                        paymentMenu(scanner, username);
+                        paymentMenu(scanner, phoneNumber, username);
                         break;
                     case "3":
                         insuranceMenu(scanner, phoneNumber, username);
                         break;
                     case "4":
                         investmentService.initSampleFunds();
-                        investmentMenu(scanner, username);
+                        investmentMenu(scanner, phoneNumber, username);
                         break;
                     case "0":
                         running = false;
@@ -116,7 +116,7 @@ public class MainMenuRunner implements CommandLineRunner {
                     System.out.print("Enter amount to add: RM ");
                     try {
                         double amount = Double.parseDouble(scanner.nextLine());
-                        paymentService.processTopUp(phoneNumber, amount);
+                        paymentService.processTopUp(phoneNumber, username, amount);
                         System.out.println("Money added successfully!");
                     } catch (Exception e) {
                         System.out.println("Invalid input, try again.");
@@ -205,7 +205,7 @@ public class MainMenuRunner implements CommandLineRunner {
                 case "1":
                     System.out.print("Enter Car Plate: ");
                     String plate = scanner.nextLine();
-                    insuranceService.purchaseMotorPolicy(username, plate, "Sedan");
+                    insuranceService.purchaseMotorPolicy(phoneNumber, username, plate, "Sedan");
                     break;
                 case "2":
                     System.out.print("Enter Destination: ");
@@ -213,7 +213,7 @@ public class MainMenuRunner implements CommandLineRunner {
                     System.out.print("Enter Pax: ");
                     try {
                         int pax = Integer.parseInt(scanner.nextLine());
-                        insuranceService.purchaseTravelPolicy(username, dest, pax);
+                        insuranceService.purchaseTravelPolicy(phoneNumber, username, dest, pax);
                     } catch (Exception e) {
                         System.out.println("Invalid input, try again.");
                     }
@@ -254,10 +254,10 @@ public class MainMenuRunner implements CommandLineRunner {
         }
     }
 
-    private void paymentMenu(Scanner scanner, String username) {
+    private void paymentMenu(Scanner scanner, String phoneNumber, String username) {
         boolean inPayment = true;
         while (inPayment) {
-            double balance = walletService.getWallet(username).getBalance();
+            double balance = walletService.getWallet(phoneNumber).getBalance();
             System.out.printf("\n--- PAYMENT MENU --- (Balance: RM %.2f)%n", balance);
             System.out.println("1. Pay Merchant (Retail)");
             System.out.println("2. Scan QR Code");
@@ -276,7 +276,7 @@ public class MainMenuRunner implements CommandLineRunner {
                     System.out.print("Enter Amount: RM ");
                     try {
                         double amount = Double.parseDouble(scanner.nextLine());
-                        paymentService.processPayment(username, amount, merchant);
+                        paymentService.processPayment(phoneNumber, username, amount, merchant);
                     } catch (Exception e) {
                         System.out.println("Invalid amount.");
                     }
@@ -287,7 +287,7 @@ public class MainMenuRunner implements CommandLineRunner {
                     System.out.print("Enter QR Data (Format: MERCHANT:AMOUNT): ");
                     // e.g., "Starbucks:15.50"
                     String qrData = scanner.nextLine();
-                    paymentService.processQRPayment(username, qrData);
+                    paymentService.processQRPayment(phoneNumber, username, qrData);
                     break;
 
                 case "3": // AutoPay Setup
@@ -342,7 +342,7 @@ public class MainMenuRunner implements CommandLineRunner {
                     System.out.print("Enter Current Month (e.g., December): ");
                     String month = scanner.nextLine();
                     // Triggers the deduction now
-                    paymentService.simulateAutoPayExecution(username, month);
+                    paymentService.simulateAutoPayExecution(phoneNumber, username, month);
                     break;
 
                 case "0":
@@ -354,7 +354,7 @@ public class MainMenuRunner implements CommandLineRunner {
         }
     }
 
-    private void investmentMenu(Scanner scanner, String username) {
+    private void investmentMenu(Scanner scanner, String phoneNumber, String username) {
         boolean inInvestment = true;
         while (inInvestment) {
             System.out.println("\nInvestment Menu");
@@ -389,7 +389,8 @@ public class MainMenuRunner implements CommandLineRunner {
                         System.out.print("Enter Amount to Invest: RM ");
                         double amount = Double.parseDouble(scanner.nextLine());
 
-                        InvestmentHistory res = investmentService.investInFund(username, selected.getFundId(), amount);
+                        InvestmentHistory res = investmentService.investInFund(phoneNumber, username,
+                                selected.getFundId(), amount);
                         System.out.printf("Success! You now own %.4f units of %s.%n", res.getUnits(),
                                 selected.getName());
                     } catch (Exception e) {
