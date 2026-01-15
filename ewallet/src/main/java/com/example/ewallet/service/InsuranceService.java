@@ -79,25 +79,21 @@ public class InsuranceService {
     }
 
     // Submit Insurance Claim
-    public void submitClaim(String policyId, double amount) {
+    public ClaimRecord submitClaim(String policyId, double amount) {
         ClaimRecord claim = new ClaimRecord();
         claim.setPolicyId(policyId);
         claim.setAmount(amount);
         claim.setStatus("Pending");
         claim.setIncidentDate(new Date());
 
-        claimRepository.save(claim);
-        System.out.println("Claim Submitted for Policy: " + policyId);
-        
-        // Get policy to determine type and username
-        Optional<BasePolicy> policy = policyRepository.findById(policyId);
-        if (policy.isPresent()) {
-            String username = policy.get().getUserId();
-            String policyType = policy.get().getPolicyType();
-            notificationService.notifyClaimUpdate(username, policyType, "Pending", amount);
-        }
-    }
+        // The save method returns the saved object (including the generated ID).
+        ClaimRecord savedClaim = claimRepository.save(claim);
 
+        System.out.println("Claim Submitted for Policy: " + policyId);
+
+
+        return savedClaim;
+    }
     // Get User Policies
     public List<BasePolicy> getPolicyList(String userId) {
         return policyRepository.findByUserId(userId);

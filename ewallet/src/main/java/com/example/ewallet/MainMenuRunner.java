@@ -246,7 +246,10 @@ public class MainMenuRunner implements CommandLineRunner {
                     System.out.print("Enter Claim Amount: ");
                     try {
                         double amount = Double.parseDouble(scanner.nextLine());
-                        insuranceService.submitClaim(pid, amount);
+                        var newClaim = insuranceService.submitClaim(pid, amount);
+                        System.out.println("Claim Success! Your Claim ID is: " + newClaim.getClaimId());
+                        System.out.println("(Please copy this ID to check status)");
+
                     } catch (Exception e) {
                         System.out.println("Error processing claim.");
                     }
