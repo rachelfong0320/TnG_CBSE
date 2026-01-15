@@ -6,6 +6,8 @@ import com.example.ewallet.entity.QRData;
 import com.example.ewallet.repository.AutoPayDataRepository;
 import com.example.ewallet.repository.PaymentDataRepository;
 import com.example.ewallet.repository.QRDataRepository;
+import com.example.ewallet.repository.UserRepository;
+
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
@@ -20,17 +22,20 @@ public class PaymentService {
     private final AutoPayDataRepository autoPayDataRepository;
     private final WalletService walletService;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     public PaymentService(PaymentDataRepository paymentDataRepository,
-                          QRDataRepository qrDataRepository,
-                          AutoPayDataRepository autoPayDataRepository,
-                          WalletService walletService,
-                          @Lazy NotificationService notificationService) {
+            QRDataRepository qrDataRepository,
+            AutoPayDataRepository autoPayDataRepository,
+            WalletService walletService,
+            @Lazy NotificationService notificationService,
+            UserRepository userRepository) {
         this.paymentDataRepository = paymentDataRepository;
         this.qrDataRepository = qrDataRepository;
         this.autoPayDataRepository = autoPayDataRepository;
         this.walletService = walletService;
         this.notificationService = notificationService;
+        this.userRepository = userRepository;
     }
 
     // 1. Process Retail Payment
@@ -38,14 +43,14 @@ public class PaymentService {
         boolean success = walletService.deductBalance(phoneNumber, amount, "Payment to " + merchantName);
         PaymentData payment = new PaymentData(username, amount, merchantName, success ? "SUCCESS" : "FAILED");
         paymentDataRepository.save(payment);
-        
+
         if (success) {
             System.out.println("Payment successful.");
-            notificationService.notifyPaymentCompleted(username, merchantName, amount);
+            notificationService.notifyPaymentCompleted(phoneNumber, merchantName, amount);
         } else {
             System.out.println("Payment failed: Insufficient funds.");
         }
-        
+
         return success;
     }
 
@@ -56,14 +61,14 @@ public class PaymentService {
             if (parts.length == 2) {
                 String merchant = parts[0];
                 double amount = Double.parseDouble(parts[1]);
-                
+
                 boolean success = walletService.deductBalance(phoneNumber, amount, "QR Pay: " + merchant);
                 QRData qr = new QRData(username, qrString, merchant, amount, success ? "SUCCESS" : "FAILED");
                 qrDataRepository.save(qr);
-                
+
                 if (success) {
                     System.out.println("QR Payment successful!");
-                    notificationService.notifyQRPayment(username, merchant, amount);
+                    notificationService.notifyQRPayment(phoneNumber, merchant, amount);
                 } else {
                     System.out.println("QR Payment failed: Insufficient funds.");
                 }
@@ -82,16 +87,19 @@ public class PaymentService {
         System.out.println("AutoPay Setup Successfully!");
         System.out.println("Schedule: Deduct RM" + amount + " on Day " + billingDay + " of every month.");
         System.out.println("No funds have been deducted yet.");
-        notificationService.generateNotification(username, "AUTOPAY", 
-            String.format("AutoPay setup for %s - RM %.2f on day %d of each month", billerName, amount, billingDay));
+        userRepository.findByUsername(username).ifPresent(user -> {
+            notificationService.generateNotification(user.getPhoneNumber(), "AUTOPAY",
+                    String.format("AutoPay setup for %s - RM %.2f on day %d of each month",
+                            billerName, amount, billingDay));
+        });
     }
 
     // 4. Simulate Month Passing (Triggers the actual deduction)
     public void simulateAutoPayExecution(String phoneNumber, String username, String currentMonthStr) {
         System.out.println("\n--- Simulating AutoPay Run for " + currentMonthStr + " ---");
-        
+
         List<AutoPayData> myAutoPays = autoPayDataRepository.findByUserId(username);
-        
+
         if (myAutoPays.isEmpty()) {
             System.out.println("No active AutoPay setups found.");
             return;
@@ -100,26 +108,28 @@ public class PaymentService {
         for (AutoPayData ap : myAutoPays) {
             if ("Active".equals(ap.getStatus())) {
                 String desc = "AutoPay (" + currentMonthStr + ") to " + ap.getRecipientId();
-                
+
                 // Attempt Deduction
                 boolean success = walletService.deductBalance(phoneNumber, ap.getAmount(), desc);
-                
+
                 // Update Last Executed Date
                 ap.setLastExecuted(new Date());
                 autoPayDataRepository.save(ap);
-                
+
                 // Log the transaction in PaymentData (so it shows in history)
-                PaymentData log = new PaymentData(username, ap.getAmount(), ap.getRecipientId(), 
+                PaymentData log = new PaymentData(username, ap.getAmount(), ap.getRecipientId(),
                         success ? "SUCCESS (" + currentMonthStr + ")" : "FAILED (" + currentMonthStr + ")");
                 paymentDataRepository.save(log);
 
                 if (success) {
                     System.out.println(" [SUCCESS] Processed scheduled payment to " + ap.getRecipientId());
-                    notificationService.notifyAutoPayExecuted(username, ap.getRecipientId(), ap.getAmount());
+                    notificationService.notifyAutoPayExecuted(phoneNumber, ap.getRecipientId(), ap.getAmount());
                 } else {
-                    System.out.println(" [FAILED] Could not process payment to " + ap.getRecipientId() + " (Insufficient Funds)");
-                    notificationService.generateNotification(username, "AUTOPAY", 
-                        String.format("AutoPay FAILED for %s - RM %.2f (Insufficient funds)", ap.getRecipientId(), ap.getAmount()));
+                    System.out.println(
+                            " [FAILED] Could not process payment to " + ap.getRecipientId() + " (Insufficient Funds)");
+                    notificationService.generateNotification(phoneNumber, "AUTOPAY",
+                            String.format("AutoPay FAILED for %s - RM %.2f (Insufficient funds)", ap.getRecipientId(),
+                                    ap.getAmount()));
                 }
             }
         }
@@ -135,11 +145,10 @@ public class PaymentService {
         if (result != null) {
             // 2. If successful, log it in PaymentData
             PaymentData log = new PaymentData(
-                username, 
-                amount, 
-                "Wallet Top-Up", 
-                "SUCCESS"
-            );
+                    username,
+                    amount,
+                    "Wallet Top-Up",
+                    "SUCCESS");
             paymentDataRepository.save(log);
             System.out.println("Top-Up Successful! Transaction recorded.");
         } else {
@@ -148,7 +157,15 @@ public class PaymentService {
     }
 
     // History Methods
-    public List<PaymentData> getPaymentHistory(String username) { return paymentDataRepository.findByUserId(username); }
-    public List<QRData> getQRHistory(String username) { return qrDataRepository.findByUserId(username); }
-    public List<AutoPayData> getAutoPayHistory(String username) { return autoPayDataRepository.findByUserId(username); }
+    public List<PaymentData> getPaymentHistory(String username) {
+        return paymentDataRepository.findByUserId(username);
+    }
+
+    public List<QRData> getQRHistory(String username) {
+        return qrDataRepository.findByUserId(username);
+    }
+
+    public List<AutoPayData> getAutoPayHistory(String username) {
+        return autoPayDataRepository.findByUserId(username);
+    }
 }
