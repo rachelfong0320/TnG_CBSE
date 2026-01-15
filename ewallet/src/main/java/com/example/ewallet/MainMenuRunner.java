@@ -30,7 +30,8 @@ public class MainMenuRunner implements CommandLineRunner {
     private final InvestmentService investmentService;
     private final NotificationService notificationService;
 
-    public MainMenuRunner(WalletService walletService, InsuranceService insuranceService, PaymentService paymentService, InvestmentService investmentService, NotificationService notificationService) {
+    public MainMenuRunner(WalletService walletService, InsuranceService insuranceService, PaymentService paymentService,
+            InvestmentService investmentService, NotificationService notificationService) {
         this.walletService = walletService;
         this.insuranceService = insuranceService;
         this.paymentService = paymentService;
@@ -64,7 +65,7 @@ public class MainMenuRunner implements CommandLineRunner {
             while (running) {
                 System.out.println("\n=== MAIN MENU ===");
                 double balance = walletService.getWallet(phoneNumber).getBalance();
-                long unreadCount = notificationService.getUnreadCount(username);
+                long unreadCount = notificationService.getUnreadCount(phoneNumber);
                 System.out.printf("User: %s | Wallet Balance: RM %.2f%n", username, balance);
                 if (unreadCount > 0) {
                     System.out.printf("[!] You have %d unread notification(s)%n", unreadCount);
@@ -94,7 +95,7 @@ public class MainMenuRunner implements CommandLineRunner {
                         investmentMenu(scanner, phoneNumber, username);
                         break;
                     case "5":
-                        notificationMenu(scanner, username);
+                        notificationMenu(scanner, phoneNumber);
                         break;
                     case "0":
                         running = false;
@@ -498,10 +499,10 @@ public class MainMenuRunner implements CommandLineRunner {
         }
     }
 
-    private void notificationMenu(Scanner scanner, String phoneNumber, String username) {
+    private void notificationMenu(Scanner scanner, String phoneNumber) {
         boolean inNotifications = true;
         while (inNotifications) {
-            long unreadCount = notificationService.getUnreadCount(username);
+            long unreadCount = notificationService.getUnreadCount(phoneNumber);
             System.out.println("\n--- NOTIFICATION CENTER ---");
             System.out.printf("Unread Notifications: %d%n", unreadCount);
             System.out.println("1. View All Notifications");
@@ -515,39 +516,39 @@ public class MainMenuRunner implements CommandLineRunner {
 
             switch (option) {
                 case "1":
-                    notificationService.displayNotifications(username);
+                    notificationService.displayNotifications(phoneNumber);
                     if (unreadCount > 0) {
                         System.out.print("\nMark all as read? (y/n): ");
                         String markRead = scanner.nextLine();
                         if (markRead.equalsIgnoreCase("y")) {
-                            notificationService.markAllAsRead(username);
+                            notificationService.markAllAsRead(phoneNumber);
                             System.out.println("All notifications marked as read.");
                         }
                     }
                     break;
 
                 case "2":
-                    var unreadNotifs = notificationService.getUnreadNotifications(username);
+                    var unreadNotifs = notificationService.getUnreadNotifications(phoneNumber);
                     System.out.println("\n=== UNREAD NOTIFICATIONS ===");
                     if (unreadNotifs.isEmpty()) {
                         System.out.println("No unread notifications.");
                     } else {
                         for (int i = 0; i < unreadNotifs.size(); i++) {
                             var notif = unreadNotifs.get(i);
-                            System.out.printf("%d. [%s] %s%n", i + 1, notif.getType(), 
-                                            notif.getTimestamp());
+                            System.out.printf("%d. [%s] %s%n", i + 1, notif.getType(),
+                                    notif.getTimestamp());
                             System.out.printf("   %s%n", notif.getMessage());
                         }
                     }
                     break;
 
                 case "3":
-                    notificationService.displayNotificationSummary(username);
+                    notificationService.displayNotificationSummary(phoneNumber);
                     break;
 
                 case "4":
                     if (unreadCount > 0) {
-                        notificationService.markAllAsRead(username);
+                        notificationService.markAllAsRead(phoneNumber);
                         System.out.println("All notifications marked as read.");
                     } else {
                         System.out.println("No unread notifications to mark.");
@@ -563,5 +564,5 @@ public class MainMenuRunner implements CommandLineRunner {
             }
         }
     }
-    
+
 }

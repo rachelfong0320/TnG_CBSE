@@ -8,8 +8,9 @@ import java.util.List;
 
 @Repository
 public interface NotificationRepository extends MongoRepository<Notification, String> {
-    List<Notification> findByUsernameOrderByTimestampAsc(String username);
-    List<Notification> findByUsernameOrderByTimestampDesc(String username);
-    List<Notification> findByUsernameAndReadOrderByTimestampDesc(String username, boolean read);
-    long countByUsernameAndRead(String username, boolean read);
+    List<Notification> findByUserIdOrderByTimestampAsc(String userId);
+    List<Notification> findByUserIdOrderByTimestampDesc(String userId);
+    List<Notification> findByUserIdAndReadOrderByTimestampDesc(String userId, boolean read);
+    long countByUserIdAndRead(String userId, boolean read);
+
 }

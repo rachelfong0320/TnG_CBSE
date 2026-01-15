@@ -19,7 +19,8 @@ public class WalletService {
 
     private static final double LOW_BALANCE_THRESHOLD = 50.0;
 
-    public WalletService(UserRepository userRepository, WalletRepository walletRepository, @Lazy NotificationService notificationService) {
+    public WalletService(UserRepository userRepository, WalletRepository walletRepository,
+            @Lazy NotificationService notificationService) {
         this.userRepository = userRepository;
         this.walletRepository = walletRepository;
         this.notificationService = notificationService;
@@ -62,8 +63,16 @@ public class WalletService {
             wallet.setBalance(wallet.getBalance() + amount);
             wallet.addTransaction("TOP_UP", amount, "Added money");
             walletRepository.save(wallet);
-            notificationService.generateNotification(username, "WALLET", 
-                String.format("RM %.2f added to wallet. New balance: RM %.2f", amount, wallet.getBalance()));
+            User user = getUserByPhoneNumber(phoneNumber);
+            if (user != null) {
+                notificationService.generateNotification(
+                        phoneNumber,
+                        "WALLET",
+                        String.format(
+                                "RM %.2f added to wallet. New balance: RM %.2f",
+                                amount,
+                                wallet.getBalance()));
+            }
             return wallet;
         } else {
             System.out.println("User wallet not found: " + phoneNumber);
@@ -73,17 +82,18 @@ public class WalletService {
 
     public boolean deductBalance(String phoneNumber, double amount, String description) {
         Wallet wallet = getWallet(phoneNumber);
+
         if (wallet != null && wallet.getBalance() >= amount) {
             wallet.setBalance(wallet.getBalance() - amount);
             walletRepository.save(wallet);
-            
-            // Check for low balance and notify
-            if (wallet.getBalance() < LOW_BALANCE_THRESHOLD) {
-                notificationService.notifyLowBalance(username, wallet.getBalance());
+            User user = getUserByPhoneNumber(phoneNumber);
+            if (user != null && wallet.getBalance() < LOW_BALANCE_THRESHOLD) {
+                notificationService.notifyLowBalance(phoneNumber, wallet.getBalance());
             }
-            
+
             return true;
         }
+
         return false;
     }
 
