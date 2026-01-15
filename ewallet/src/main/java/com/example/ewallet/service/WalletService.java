@@ -5,6 +5,7 @@ import com.example.ewallet.entity.Wallet;
 import com.example.ewallet.repository.UserRepository;
 import com.example.ewallet.repository.WalletRepository;
 
+import org.springframework.context.annotation.Lazy;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -14,10 +15,14 @@ public class WalletService {
 
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
+    private final NotificationService notificationService;
 
-    public WalletService(UserRepository userRepository, WalletRepository walletRepository) {
+    private static final double LOW_BALANCE_THRESHOLD = 50.0;
+
+    public WalletService(UserRepository userRepository, WalletRepository walletRepository, @Lazy NotificationService notificationService) {
         this.userRepository = userRepository;
         this.walletRepository = walletRepository;
+        this.notificationService = notificationService;
     }
 
     public Wallet findOrCreateWallet(String username, String phoneNumber, double initialBalance) {
@@ -57,6 +62,8 @@ public class WalletService {
             wallet.setBalance(wallet.getBalance() + amount);
             wallet.addTransaction("TOP_UP", amount, "Added money");
             walletRepository.save(wallet);
+            notificationService.generateNotification(username, "WALLET", 
+                String.format("RM %.2f added to wallet. New balance: RM %.2f", amount, wallet.getBalance()));
             return wallet;
         } else {
             System.out.println("User wallet not found: " + phoneNumber);
@@ -69,6 +76,12 @@ public class WalletService {
         if (wallet != null && wallet.getBalance() >= amount) {
             wallet.setBalance(wallet.getBalance() - amount);
             walletRepository.save(wallet);
+            
+            // Check for low balance and notify
+            if (wallet.getBalance() < LOW_BALANCE_THRESHOLD) {
+                notificationService.notifyLowBalance(username, wallet.getBalance());
+            }
+            
             return true;
         }
         return false;
