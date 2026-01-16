@@ -347,7 +347,7 @@ public class InvestmentService {
             fund.setNav(newPrice);
             fundRepository.save(fund);
 
-            System.out.printf("[Market] %s: RM %.2f -> RM %.2f (%.2f%%)%n",
+            System.out.printf("[Market] %-25s: RM %8.4f -> RM %8.4f (%+.2f%%)%n",
                     fund.getName(), oldPrice, newPrice, changePercent * 100);
         }
     }
