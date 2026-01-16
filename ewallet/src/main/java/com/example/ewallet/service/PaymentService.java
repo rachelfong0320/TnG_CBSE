@@ -80,19 +80,38 @@ public class PaymentService {
         }
     }
 
-    // 3. Setup AutoPay ONLY (No Deduction yet)
-    public void setupAutoPay(String username, String billerName, double amount, int billingDay) {
-        AutoPayData autoPay = new AutoPayData(username, billerName, amount, billingDay);
-        autoPayDataRepository.save(autoPay);
-        System.out.println("AutoPay Setup Successfully!");
-        System.out.println("Schedule: Deduct RM" + amount + " on Day " + billingDay + " of every month.");
-        System.out.println("No funds have been deducted yet.");
-        userRepository.findByUsername(username).ifPresent(user -> {
-            notificationService.generateNotification(user.getPhoneNumber(), "AUTOPAY",
-                    String.format("AutoPay setup for %s - RM %.2f on day %d of each month",
-                            billerName, amount, billingDay));
-        });
+    // 3. Setup AutoPay (Prevent Duplicates)
+public void setupAutoPay(String username, String billerName, double amount, int billingDay) {
+    // Check if an active AutoPay already exists for this biller
+    List<AutoPayData> existingAutoPays = autoPayDataRepository.findByUserId(username);
+    
+    AutoPayData autoPay = existingAutoPays.stream()
+            .filter(ap -> ap.getRecipientId().equalsIgnoreCase(billerName) && "Active".equals(ap.getStatus()))
+            .findFirst()
+            .orElse(null);
+
+    if (autoPay != null) {
+        // Update existing record
+        System.out.println("Updating existing AutoPay schedule for " + billerName);
+        autoPay.setAmount(amount);
+        autoPay.setBillingDay(billingDay);
+    } else {
+        // Create new record
+        autoPay = new AutoPayData(username, billerName, amount, billingDay);
     }
+
+    autoPayDataRepository.save(autoPay);
+
+    System.out.println("AutoPay Setup Successfully!");
+    System.out.println("Schedule: Deduct RM" + amount + " on Day " + billingDay + " of every month.");
+    System.out.println("No funds have been deducted yet.");
+    
+    userRepository.findByUsername(username).ifPresent(user -> {
+        notificationService.generateNotification(user.getPhoneNumber(), "AUTOPAY",
+                String.format("AutoPay setup for %s - RM %.2f on day %d of each month",
+                        billerName, amount, billingDay));
+    });
+}
 
     // 4. Simulate Month Passing (Triggers the actual deduction)
     public void simulateAutoPayExecution(String phoneNumber, String username, String currentMonthStr) {
