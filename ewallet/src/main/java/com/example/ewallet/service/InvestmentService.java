@@ -114,6 +114,8 @@ public class InvestmentService {
         portfolio.updateHoldings(fundId, -unitsToSell);
         portfolioRepository.save(portfolio);
 
+        System.out.println("[Investment] Redeeming " + unitsToSell + " units from " + fund.getName() + "...");
+
         // 4. Return money to Wallet
         paymentService.processTopUp(phoneNumber, username, proceeds);
 
@@ -126,6 +128,8 @@ public class InvestmentService {
         saleLog.setUnits(unitsToSell);
         saleLog.setStatus("SUCCESS");
         investmentHistoryRepository.save(saleLog);
+
+        System.out.printf("[Success] RM %.2f from sale has been credited to your wallet.%n", proceeds);
     }
 
     // Updates the Portfolio summary for the user
