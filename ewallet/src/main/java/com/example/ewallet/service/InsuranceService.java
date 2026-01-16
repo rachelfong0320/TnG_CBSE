@@ -4,8 +4,10 @@ import com.example.ewallet.entity.BasePolicy;
 import com.example.ewallet.entity.ClaimRecord;
 import com.example.ewallet.entity.MotorPolicy;
 import com.example.ewallet.entity.TravelPolicy;
+import com.example.ewallet.entity.User;
 import com.example.ewallet.repository.ClaimRepository;
 import com.example.ewallet.repository.PolicyRepository;
+import com.example.ewallet.repository.UserRepository;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import com.example.ewallet.service.PaymentService;
@@ -21,15 +23,18 @@ public class InsuranceService {
     private final ClaimRepository claimRepository;
     private final PaymentService paymentService;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     public InsuranceService(PolicyRepository policyRepository,
                             ClaimRepository claimRepository,
                             PaymentService paymentService,
-                            @Lazy NotificationService notificationService) {
+                            @Lazy NotificationService notificationService,
+                            UserRepository userRepository) {
         this.policyRepository = policyRepository;
         this.claimRepository = claimRepository;
         this.paymentService = paymentService;
         this.notificationService = notificationService;
+        this.userRepository = userRepository;
     }
 
     // Purchase Motor Insurance
@@ -52,6 +57,7 @@ public class InsuranceService {
 
             policyRepository.save(policy);
             System.out.println("Payment Successful! Motor Policy Created for " + username);
+            
         } else {
             System.out.println("Payment Failed: Insufficient Balance for " + username);
         }
@@ -73,13 +79,14 @@ public class InsuranceService {
 
             policyRepository.save(policy);
             System.out.println("Payment Successful! Travel Policy Created for " + username);
+
         } else {
             System.out.println("Payment Failed: Insufficient Balance.");
         }
     }
 
     // Submit Insurance Claim
-    public ClaimRecord submitClaim(String policyId, double amount) {
+    public ClaimRecord submitClaim(String phoneNumber, String policyId, double amount) {
         ClaimRecord claim = new ClaimRecord();
         claim.setPolicyId(policyId);
         claim.setAmount(amount);
@@ -91,6 +98,10 @@ public class InsuranceService {
 
         System.out.println("Claim Submitted for Policy: " + policyId + " (Status: Pending Review)");
 
+        // Always generate notification
+        notificationService.generateNotification(phoneNumber, "CLAIM",
+                String.format("Claim submitted for Policy %s - RM %.2f (Status: Pending Review)", 
+                        policyId, amount));
 
         return savedClaim;
     }

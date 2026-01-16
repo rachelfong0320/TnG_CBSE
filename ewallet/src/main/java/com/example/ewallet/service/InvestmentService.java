@@ -83,10 +83,6 @@ public class InvestmentService {
                 updateUserPortfolio(username, fundId, investment.getUnits());
                 InvestmentHistory savedInvestment = investmentHistoryRepository.save(investment);
 
-                // Notify user about investment
-                notificationService.generateNotification(phoneNumber, "INVESTMENT",
-                        String.format("Invested RM %.2f in %s (%.4f units)", amount, fund.getName(), investment.getUnits()));
-
                 return savedInvestment;
             } catch (Exception e) {
                 paymentService.processTopUp(phoneNumber, username, amount);
