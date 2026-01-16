@@ -428,7 +428,6 @@ public class MainMenuRunner implements CommandLineRunner {
                         double units = Double.parseDouble(scanner.nextLine());
 
                         investmentService.sellFund(phoneNumber, username, toSell.getFundId(), units);
-                        System.out.println("Sale processed. Money credited to your wallet.");
                     } catch (Exception e) {
                         System.out.println("Error: " + e.getMessage());
                     }

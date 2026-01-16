@@ -20,12 +20,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class PaymentIntegrationTest {
 
     // --- FIX: Updated Fake Input ---
-    // Sequence: 
-    // 1. "user1" (Username)
-    // 2. "100"   (Initial Balance - needed because DB is empty when App starts)
-    // 3. "0"     (Exit Menu)
+    // Sequence required by MainMenuRunner:
+    // 1. Phone Number (e.g., "999")
+    // 2. Username (e.g., "testUser") - triggered because user doesn't exist yet
+    // 3. Initial Balance (e.g., "100")
+    // 4. Menu Option "0" (Exit)
     static {
-        String fakeInput = "user1\n100\n0\n";
+        // We provide 4 inputs so the runner completes the registration and then exits the menu loop.
+        String fakeInput = "999\ntestUser\n100\n0\n";
         System.setIn(new ByteArrayInputStream(fakeInput.getBytes()));
     }
     // --------------------------------
@@ -59,8 +61,8 @@ class PaymentIntegrationTest {
 
     @Test
     void testPurchaseUpdatesWallet_Integration() {
-        // Test Data
-        String phoneNumber = "0122222222";
+        // Test Data - [FIX] Use the same phone number as defined in setup()
+        String phoneNumber = "0123456789"; 
         String username = "user1";
         double purchaseAmount = 40.0;
         String merchant = "Tesco";
@@ -72,7 +74,7 @@ class PaymentIntegrationTest {
         assertTrue(success, "Payment should succeed");
 
         // 3. Verify Database
-        Wallet updatedWallet = walletService.getWallet(username);
+        Wallet updatedWallet = walletService.getWallet(phoneNumber); // Use phone number to retrieve wallet
         assertEquals(60.0, updatedWallet.getBalance(), 0.01, "Wallet balance should be 60.0");
 
         List<PaymentData> history = paymentDataRepository.findByUserId(username);

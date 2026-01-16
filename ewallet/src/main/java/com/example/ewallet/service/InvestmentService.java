@@ -25,11 +25,11 @@ public class InvestmentService {
     private final PaymentService paymentService;
     private final NotificationService notificationService;
 
-    public InvestmentService(FundRepository fundRepository, 
-                             InvestmentHistoryRepository investmentHistoryRepository, 
-                             PortfolioRepository portfolioRepository, 
-                             PaymentService paymentService,
-                             @Lazy NotificationService notificationService) {
+    public InvestmentService(FundRepository fundRepository,
+            InvestmentHistoryRepository investmentHistoryRepository,
+            PortfolioRepository portfolioRepository,
+            PaymentService paymentService,
+            @Lazy NotificationService notificationService) {
         this.fundRepository = fundRepository;
         this.investmentHistoryRepository = investmentHistoryRepository;
         this.portfolioRepository = portfolioRepository;
@@ -44,7 +44,7 @@ public class InvestmentService {
             createFund("F02", "Balanced Global Fund", "Diversified across international stocks and bonds.", "Medium", 2.5000);
             createFund("F03", "Equity Growth Fund", "High-growth potential targeting tech and emerging markets.", "High", 5.7500);
             createFund("F04", "Digital Assets Fund", "Invests in blockchain infrastructure and crypto-assets.", "High", 10.2000);
-            
+
             System.out.println("[System] Sample funds initialized.");
         }
     }
@@ -112,18 +112,22 @@ public class InvestmentService {
         portfolio.updateHoldings(fundId, -unitsToSell);
         portfolioRepository.save(portfolio);
 
+        System.out.println("[Investment] Redeeming " + unitsToSell + " units from " + fund.getName() + "...");
+
         // 4. Return money to Wallet
         paymentService.processTopUp(phoneNumber, username, proceeds);
-        
+
         // 5. Log Transaction
         InvestmentHistory saleLog = new InvestmentHistory();
         saleLog.setUserId(username);
         saleLog.setFundId(fundId);
         saleLog.setType("SELL");
-        saleLog.setAmount(proceeds); 
+        saleLog.setAmount(proceeds);
         saleLog.setUnits(unitsToSell);
         saleLog.setStatus("SUCCESS");
         investmentHistoryRepository.save(saleLog);
+
+        System.out.printf("[Success] RM %.2f from sale has been credited to your wallet.%n", proceeds);
     }
 
     // Updates the Portfolio summary for the user
@@ -147,8 +151,8 @@ public class InvestmentService {
         // 1. Calculate Total Cost Basis 
         double netInvestment = history.stream()
                 .mapToDouble(h -> "BUY".equals(h.getType()) ? h.getAmount() : -h.getAmount())
-                .sum(); 
-        
+                .sum();
+
         // 2. Calculate Current Market Value of all holdings
         double currentMarketValue = 0;
         if (portfolio.getFundHoldings() != null) {
@@ -178,7 +182,9 @@ public class InvestmentService {
 
     public String getFormattedFundsTable(String username) {
         List<Fund> funds = getAllFunds();
-        if (funds.isEmpty()) return "No funds currently available.";
+        if (funds.isEmpty()) {
+            return "No funds currently available.";
+        }
 
         // Get user portfolio to show owned units
         Portfolio portfolio = portfolioRepository.findByUserId(username).orElse(new Portfolio());
@@ -191,8 +197,8 @@ public class InvestmentService {
             Fund f = funds.get(i);
             double ownedUnits = portfolio.getUnitsForFund(f.getFundId());
 
-            sb.append(String.format("%-3d | %-6s | %-25s | %8.4f | %-6s | %10.4f%n", 
-                (i + 1), f.getFundId(), f.getName(), f.getPrice(), f.getRiskCategory(), ownedUnits));
+            sb.append(String.format("%-3d | %-6s | %-25s | %8.4f | %-6s | %10.4f%n",
+                    (i + 1), f.getFundId(), f.getName(), f.getPrice(), f.getRiskCategory(), ownedUnits));
         }
         sb.append("----------------------------------------------------------------------------");
         return sb.toString();
@@ -200,7 +206,9 @@ public class InvestmentService {
 
     public String getFormattedHistory(String username) {
         List<InvestmentHistory> history = getUserInvestments(username);
-        if (history.isEmpty()) return "No transaction history found.";
+        if (history.isEmpty()) {
+            return "No transaction history found.";
+        }
 
         StringBuilder sb = new StringBuilder();
         sb.append("\n").append("=".repeat(80)).append("\n");
@@ -209,13 +217,15 @@ public class InvestmentService {
 
         for (InvestmentHistory h : history) {
             String dateStr = (h.getTimestamp() != null) ? h.getTimestamp().toString() : "N/A";
-            if (dateStr.length() > 19) dateStr = dateStr.substring(0, 19);
+            if (dateStr.length() > 19) {
+                dateStr = dateStr.substring(0, 19);
+            }
 
             String prefix = "BUY".equalsIgnoreCase(h.getType()) ? "-" : "+";
             String amountDisplay = String.format("%s RM %.2f", prefix, h.getAmount());
 
-            sb.append(String.format("%-22s | %-10s | %-12s | %-10.4f | %12s%n", 
-                dateStr, h.getType(), h.getFundId(), h.getUnits(), amountDisplay));
+            sb.append(String.format("%-22s | %-10s | %-12s | %-10.4f | %12s%n",
+                    dateStr, h.getType(), h.getFundId(), h.getUnits(), amountDisplay));
         }
         return sb.toString();
     }
@@ -237,12 +247,12 @@ public class InvestmentService {
         }
 
         Portfolio portfolio = portfolioRepository.findByUserId(username)
-            .orElseGet(() -> {
-                Portfolio p = new Portfolio();
-                p.setUserId(username);
-                return p;
-            });
-            
+                .orElseGet(() -> {
+                    Portfolio p = new Portfolio();
+                    p.setUserId(username);
+                    return p;
+                });
+
         portfolio.setRiskCategory(profile); // Save risk result to portfolio
         portfolioRepository.save(portfolio);
 
@@ -255,18 +265,18 @@ public class InvestmentService {
         result.append("\nRisk Profile Saved!");
         result.append("\nYour Risk Profile: **").append(profile).append("**\n");
         result.append("Suggested Strategy: Look for ").append(suggestedRisk).append(" risk funds.\n");
-        
+
         if (!suggestions.isEmpty()) {
             result.append("Recommended for you: ").append(suggestions.get(0).getName());
         }
-        
+
         return result.toString();
     }
 
     public String getPortfolioSummary(String username) {
         Portfolio portfolio = portfolioRepository.findByUserId(username)
                 .orElse(new Portfolio());
-        
+
         double returns = calculateReturns(username);
         String status = (returns >= 0) ? "PROFIT" : "LOSS";
         String risk = (portfolio.getRiskCategory() != null) ? portfolio.getRiskCategory() : "Not Assessed (Take the quiz!)";
@@ -278,7 +288,7 @@ public class InvestmentService {
         sb.append(String.format("User         : %s%n", username));
         sb.append(String.format("Risk Profile : %s%n", risk));
         sb.append("------------------------------------------\n");
-        
+
         // List holdings if they exist
         Map<String, Double> holdings = portfolio.getFundHoldings();
         if (holdings == null || holdings.isEmpty()) {
@@ -286,12 +296,12 @@ public class InvestmentService {
         } else {
             sb.append("CURRENT HOLDINGS:\n");
             for (Map.Entry<String, Double> entry : holdings.entrySet()) {
-            Fund f = fundRepository.findById(entry.getKey()).orElse(null);
-            if (f != null && entry.getValue() > 0) {
-                sb.append(String.format(" - %-20s: %.4f units (RM %.2f)%n", 
-                    f.getName(), entry.getValue(), (entry.getValue() * f.getPrice())));
+                Fund f = fundRepository.findById(entry.getKey()).orElse(null);
+                if (f != null && entry.getValue() > 0) {
+                    sb.append(String.format(" - %-20s: %.4f units (RM %.2f)%n",
+                            f.getName(), entry.getValue(), (entry.getValue() * f.getPrice())));
+                }
             }
-        }
         }
 
         sb.append("------------------------------------------\n");
@@ -303,37 +313,46 @@ public class InvestmentService {
     }
 
     public void simulateMarketChange() {
-    List<Fund> funds = fundRepository.findAll();
-    if (funds.isEmpty()) {
-        System.out.println("No funds available to simulate.");
-        return;
-    }
-
-    java.util.Random random = new java.util.Random();
-
-    for (Fund fund : funds) {
-        double volatility;
-        
-        switch (fund.getRiskCategory().toLowerCase()) {
-            case "high":   volatility = 0.10; break;
-            case "medium": volatility = 0.04; break;
-            case "low":    volatility = 0.01; break;
-            default:       volatility = 0.03;
+        List<Fund> funds = fundRepository.findAll();
+        if (funds.isEmpty()) {
+            System.out.println("No funds available to simulate.");
+            return;
         }
 
-        double changePercent = (random.nextDouble() * 2 * volatility) - volatility;
-        double oldPrice = fund.getPrice();
-        double newPrice = oldPrice * (1 + changePercent);
-        if (newPrice < 0.01) newPrice = 0.01;
+        java.util.Random random = new java.util.Random();
 
-        fund.setPrice(newPrice);
-        fund.setNav(newPrice);
-        fundRepository.save(fund);
+        for (Fund fund : funds) {
+            double volatility;
 
-        System.out.printf("[Market] %s: RM %.2f -> RM %.2f (%.2f%%)%n", 
-            fund.getName(), oldPrice, newPrice, changePercent * 100);
+            switch (fund.getRiskCategory().toLowerCase()) {
+                case "high":
+                    volatility = 0.10;
+                    break;
+                case "medium":
+                    volatility = 0.04;
+                    break;
+                case "low":
+                    volatility = 0.01;
+                    break;
+                default:
+                    volatility = 0.03;
+            }
+
+            double changePercent = (random.nextDouble() * 2 * volatility) - volatility;
+            double oldPrice = fund.getPrice();
+            double newPrice = oldPrice * (1 + changePercent);
+            if (newPrice < 0.01) {
+                newPrice = 0.01;
+            }
+
+            fund.setPrice(newPrice);
+            fund.setNav(newPrice);
+            fundRepository.save(fund);
+
+            System.out.printf("[Market] %-25s: RM %8.4f -> RM %8.4f (%+.2f%%)%n",
+                    fund.getName(), oldPrice, newPrice, changePercent * 100);
+        }
     }
-}
 
     // Create new funds
     public Fund createFund(String id, String name, String description, String riskCategory, double price) {
@@ -351,13 +370,15 @@ public class InvestmentService {
         }
 
         Fund newFund = new Fund();
-        if (id != null) newFund.setFundId(id); // Only set if custom ID is provided
-        newFund.setName(name);
+        if (id != null) {
+            newFund.setFundId(id); // Only set if custom ID is provided
+
+                }newFund.setName(name);
         newFund.setDescription(description);
         newFund.setRiskCategory(riskCategory);
         newFund.setPrice(price);
-        newFund.setNav(price); 
-        
+        newFund.setNav(price);
+
         return fundRepository.save(newFund);
     }
 
