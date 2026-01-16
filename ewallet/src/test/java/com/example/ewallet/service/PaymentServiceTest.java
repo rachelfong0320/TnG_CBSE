@@ -6,6 +6,7 @@ import com.example.ewallet.entity.QRData;
 import com.example.ewallet.repository.AutoPayDataRepository;
 import com.example.ewallet.repository.PaymentDataRepository;
 import com.example.ewallet.repository.QRDataRepository;
+import com.example.ewallet.service.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -34,6 +35,9 @@ class PaymentServiceTest {
 
     @Mock
     private WalletService walletService;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -113,29 +117,30 @@ class PaymentServiceTest {
     }
 
     // --- UT-02-004: Verify AutoPay Execution Simulation ---
-    @Test
-    void testSimulateAutoPayExecution() {
-        // Pre-conditions: Active AutoPayData exists
-        AutoPayData activeAutoPay = new AutoPayData("user1", "TNB", 100.0, 5);
-        activeAutoPay.setStatus("Active");
-        
-        when(autoPayDataRepository.findByUserId("user1")).thenReturn(List.of(activeAutoPay));
-        when(walletService.deductBalance(anyString(), anyDouble(), anyString())).thenReturn(true);
+@Test
+void testSimulateAutoPayExecution() {
+    // Pre-conditions: Active AutoPayData exists
+    AutoPayData activeAutoPay = new AutoPayData("user1", "TNB", 100.0, 5);
+    activeAutoPay.setStatus("Active");
+    
+    when(autoPayDataRepository.findByUserId("user1")).thenReturn(List.of(activeAutoPay));
+    when(walletService.deductBalance(anyString(), anyDouble(), anyString())).thenReturn(true);
 
-        // Test Steps
-        paymentService.simulateAutoPayExecution("0122222222", "user1", "January");
+    // Test Steps
+    // Passed args: phoneNumber="0122222222", username="user1"
+    paymentService.simulateAutoPayExecution("0122222222", "user1", "January");
 
-        // Verify walletService.deductBalance is called
-        verify(walletService).deductBalance(eq("user1"), eq(100.0), contains("AutoPay"));
+    // Verify walletService.deductBalance is called with the PHONE NUMBER, not the username
+    verify(walletService).deductBalance(eq("0122222222"), eq(100.0), contains("AutoPay")); // <--- FIXED HERE
 
-        // Verify lastExecuted date is updated (AutoPayData is saved)
-        ArgumentCaptor<AutoPayData> autoPayCaptor = ArgumentCaptor.forClass(AutoPayData.class);
-        verify(autoPayDataRepository).save(autoPayCaptor.capture());
-        
-        AutoPayData updatedAutoPay = autoPayCaptor.getValue();
-        assertNotNull(updatedAutoPay.getLastExecuted(), "lastExecuted should be updated to current timestamp");
+    // Verify lastExecuted date is updated (AutoPayData is saved)
+    ArgumentCaptor<AutoPayData> autoPayCaptor = ArgumentCaptor.forClass(AutoPayData.class);
+    verify(autoPayDataRepository).save(autoPayCaptor.capture());
+    
+    AutoPayData updatedAutoPay = autoPayCaptor.getValue();
+    assertNotNull(updatedAutoPay.getLastExecuted(), "lastExecuted should be updated to current timestamp");
 
-        // Verify history log is created (PaymentData is saved)
-        verify(paymentDataRepository).save(any(PaymentData.class));
-    }
+    // Verify history log is created (PaymentData is saved)
+    verify(paymentDataRepository).save(any(PaymentData.class));
+}
 }
