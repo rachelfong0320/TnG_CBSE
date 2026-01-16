@@ -13,6 +13,7 @@ import com.example.ewallet.entity.Portfolio;
 import com.example.ewallet.repository.FundRepository;
 import com.example.ewallet.repository.InvestmentHistoryRepository;
 import com.example.ewallet.repository.PortfolioRepository;
+import com.example.ewallet.service.NotificationService;
 
 @Service
 public class InvestmentService {
@@ -83,7 +84,8 @@ public class InvestmentService {
                 InvestmentHistory savedInvestment = investmentHistoryRepository.save(investment);
 
                 // Notify user about investment
-                notificationService.notifyInvestmentMade(username, fund.getName(), amount, investment.getUnits());
+                notificationService.generateNotification(phoneNumber, "INVESTMENT",
+                        String.format("Invested RM %.2f in %s (%.4f units)", amount, fund.getName(), investment.getUnits()));
 
                 return savedInvestment;
             } catch (Exception e) {

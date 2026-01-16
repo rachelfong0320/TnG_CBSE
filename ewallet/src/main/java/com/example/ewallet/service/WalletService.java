@@ -88,7 +88,8 @@ public class WalletService {
             walletRepository.save(wallet);
             User user = getUserByPhoneNumber(phoneNumber);
             if (user != null && wallet.getBalance() < LOW_BALANCE_THRESHOLD) {
-                notificationService.notifyLowBalance(phoneNumber, wallet.getBalance());
+                notificationService.generateNotification(phoneNumber, "WALLET",
+                        String.format("Low wallet balance alert! Current balance: RM %.2f", wallet.getBalance()));
             }
 
             return true;

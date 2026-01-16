@@ -46,9 +46,12 @@ public class PaymentService {
 
         if (success) {
             System.out.println("Payment successful.");
-            notificationService.notifyPaymentCompleted(phoneNumber, merchantName, amount);
+            notificationService.generateNotification(phoneNumber, "PAYMENT",
+                    String.format("Payment of RM %.2f to %s completed successfully", amount, merchantName));
         } else {
             System.out.println("Payment failed: Insufficient funds.");
+            notificationService.generateNotification(phoneNumber, "PAYMENT",
+                    String.format("Payment FAILED: RM %.2f to %s (Insufficient funds)", amount, merchantName));
         }
 
         return success;
@@ -68,9 +71,12 @@ public class PaymentService {
 
                 if (success) {
                     System.out.println("QR Payment successful!");
-                    notificationService.notifyQRPayment(phoneNumber, merchant, amount);
+                    notificationService.generateNotification(phoneNumber, "QR",
+                            String.format("QR payment of RM %.2f to %s successful", amount, merchant));
                 } else {
                     System.out.println("QR Payment failed: Insufficient funds.");
+                    notificationService.generateNotification(phoneNumber, "QR",
+                            String.format("QR Payment FAILED: RM %.2f to %s (Insufficient funds)", amount, merchant));
                 }
             } else {
                 System.out.println("Invalid QR format.");
@@ -123,7 +129,8 @@ public class PaymentService {
 
                 if (success) {
                     System.out.println(" [SUCCESS] Processed scheduled payment to " + ap.getRecipientId());
-                    notificationService.notifyAutoPayExecuted(phoneNumber, ap.getRecipientId(), ap.getAmount());
+                    notificationService.generateNotification(phoneNumber, "AUTOPAY",
+                            String.format("AutoPay executed: RM %.2f paid to %s", ap.getAmount(), ap.getRecipientId()));
                 } else {
                     System.out.println(
                             " [FAILED] Could not process payment to " + ap.getRecipientId() + " (Insufficient Funds)");
