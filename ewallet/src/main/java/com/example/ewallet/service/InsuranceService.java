@@ -51,9 +51,7 @@ public class InsuranceService {
             policy.setCarModel(model);
 
             policyRepository.save(policy);
-            System.out.println("Payment Successful! Motor Policy Created for " + username);
-        } else {
-            System.out.println("Payment Failed: Insufficient Balance for " + username);
+            System.out.println("Motor Policy Created for " + username);
         }
     }
 
@@ -72,9 +70,7 @@ public class InsuranceService {
             policy.setTravelPax(pax);
 
             policyRepository.save(policy);
-            System.out.println("Payment Successful! Travel Policy Created for " + username);
-        } else {
-            System.out.println("Payment Failed: Insufficient Balance.");
+            System.out.println("Travel Policy Created for " + username);
         }
     }
 
