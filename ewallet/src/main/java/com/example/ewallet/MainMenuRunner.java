@@ -15,6 +15,7 @@ import com.example.ewallet.service.PaymentService;
 import com.example.ewallet.service.WalletService;
 import com.example.ewallet.service.NotificationService;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Scanner;
 
 @Component
+@Profile("!test")
 public class MainMenuRunner implements CommandLineRunner {
 
     private final WalletService walletService;
