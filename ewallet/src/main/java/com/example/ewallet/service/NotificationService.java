@@ -69,7 +69,7 @@ public class NotificationService {
         User user = getUserByPhoneNumber(phoneNumber);
         if (user == null)
             return List.of();
-        return notificationRepository.findByUserIdAndReadOrderByTimestampDesc(user.getId(), false);
+        return notificationRepository.findByUserIdAndReadOrderByTimestampAsc(user.getId(), false);
     }
 
     public long getUnreadCount(String phoneNumber) {
@@ -157,43 +157,6 @@ public class NotificationService {
 
     public Double getFundPrice(String fundName) {
         return fundRepository.findByName(fundName).map(Fund::getPrice).orElse(0.0);
-    }
-
-    public void notifyPaymentCompleted(String phoneNumber, String recipient, double amount) {
-        String message = String.format("Payment of RM %.2f to %s completed successfully", amount, recipient);
-        generateNotification(phoneNumber, "PAYMENT", message);
-    }
-
-    public void notifyLowBalance(String phoneNumber, double balance) {
-        String message = String.format("Low wallet balance alert! Current balance: RM %.2f", balance);
-        generateNotification(phoneNumber, "WALLET", message);
-    }
-
-    public void notifyAutoPayExecuted(String phoneNumber, String service, double amount) {
-        String message = String.format("AutoPay executed: RM %.2f paid to %s", amount, service);
-        generateNotification(phoneNumber, "AUTOPAY", message);
-    }
-
-    public void notifyQRPayment(String phoneNumber, String merchant, double amount) {
-        String message = String.format("QR payment of RM %.2f to %s successful", amount, merchant);
-        generateNotification(phoneNumber, "QR", message);
-    }
-
-    public void notifyInvestmentMade(String phoneNumber, String fundName, double amount, double units) {
-        String message = String.format("Invested RM %.2f in %s (%.4f units)", amount, fundName, units);
-        generateNotification(phoneNumber, "INVESTMENT", message);
-    }
-
-    public void notifyFundPriceChange(String phoneNumber, String fundName, double oldPrice, double newPrice) {
-        double change = ((newPrice - oldPrice) / oldPrice) * 100;
-        String message = String.format("Fund %s price changed: RM %.2f -> RM %.2f (%.2f%%)", fundName, oldPrice,
-                newPrice, change);
-        generateNotification(phoneNumber, "FUND", message);
-    }
-
-    public void notifyClaimUpdate(String phoneNumber, String policyType, String status, double amount) {
-        String message = String.format("Claim update: %s claim for RM %.2f - Status: %s", policyType, amount, status);
-        generateNotification(phoneNumber, "CLAIM", message);
     }
 
     public void displayNotifications(String phoneNumber) {

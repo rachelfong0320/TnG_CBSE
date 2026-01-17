@@ -88,7 +88,8 @@ public class WalletService {
             walletRepository.save(wallet);
             User user = getUserByPhoneNumber(phoneNumber);
             if (user != null && wallet.getBalance() < LOW_BALANCE_THRESHOLD) {
-                notificationService.notifyLowBalance(phoneNumber, wallet.getBalance());
+                notificationService.generateNotification(phoneNumber, "WALLET",
+                        String.format("Low wallet balance alert! Current balance: RM %.2f", wallet.getBalance()));
             }
 
             return true;
@@ -129,6 +130,19 @@ public class WalletService {
 
         walletRepository.save(senderWallet);
         walletRepository.save(recipientWallet);
+
+        notificationService.generateNotification(senderPhoneNumber, "WALLET",
+                String.format("Sent RM %.2f to %s (%s). New balance: RM %.2f", 
+                        amount, recipientUser.getUsername(), recipientPhoneNumber, senderWallet.getBalance()));
+        
+        if (senderWallet.getBalance() < LOW_BALANCE_THRESHOLD) {
+            notificationService.generateNotification(senderPhoneNumber, "WALLET",
+                    String.format("Low wallet balance alert! Current balance: RM %.2f", senderWallet.getBalance()));
+        }
+
+        notificationService.generateNotification(recipientPhoneNumber, "WALLET",
+                String.format("Received RM %.2f from %s (%s). New balance: RM %.2f", 
+                        amount, senderUser.getUsername(), senderPhoneNumber, recipientWallet.getBalance()));
 
         return true;
     }
