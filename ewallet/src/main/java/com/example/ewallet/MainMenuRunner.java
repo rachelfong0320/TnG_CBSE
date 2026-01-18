@@ -373,13 +373,13 @@ public class MainMenuRunner implements CommandLineRunner {
         boolean inInvestment = true;
         while (inInvestment) {
             System.out.println("\nInvestment Menu");
-            System.out.println("1. View Available Funds");
-            System.out.println("2. Invest in a Fund (Buy)");
+            System.out.println("1. View Available Investment Funds");
+            System.out.println("2. Buy Fund Units");
             System.out.println("3. Sell Fund Units");
-            System.out.println("4. View Investment History");
+            System.out.println("4. View Investment Transaction History");
             System.out.println("5. View Portfolio & Returns");
             System.out.println("6. Take Risk Assessment Quiz");
-            System.out.println("7. Simulate Market Flunctuations");
+            System.out.println("7. Simulate Market Fluctuations");
             System.out.println("0. Back to Main Menu");
             System.out.print("Select Option: ");
 
