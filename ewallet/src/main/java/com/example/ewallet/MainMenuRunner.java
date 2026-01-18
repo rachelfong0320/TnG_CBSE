@@ -490,7 +490,7 @@ public class MainMenuRunner implements CommandLineRunner {
 
                 case "7": // Simulate Market
                     System.out.println("\n--- SIMULATING MARKET FLUCTUATIONS ---");
-                    investmentService.simulateMarketChange();
+                    investmentService.simulateMarketChange(phoneNumber);
                     System.out.println("Market prices updated! Check your Portfolio (Option 5) to see the impact.");
                     break;
 
@@ -512,8 +512,7 @@ public class MainMenuRunner implements CommandLineRunner {
             System.out.printf("Unread Notifications: %d%n", unreadCount);
             System.out.println("1. View All Notifications");
             System.out.println("2. View Unread Notifications");
-            System.out.println("3. View Notification Summary");
-            System.out.println("4. Mark All as Read");
+            System.out.println("3. Mark All as Read");
             System.out.println("0. Back to Main Menu");
             System.out.print("Select Option: ");
 
@@ -548,10 +547,6 @@ public class MainMenuRunner implements CommandLineRunner {
                     break;
 
                 case "3":
-                    notificationService.displayNotificationSummary(phoneNumber);
-                    break;
-
-                case "4":
                     if (unreadCount > 0) {
                         notificationService.markAllAsRead(phoneNumber);
                         System.out.println("All notifications marked as read.");

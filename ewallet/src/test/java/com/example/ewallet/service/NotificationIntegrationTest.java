@@ -81,24 +81,25 @@ class NotificationIntegrationTest {
         notificationService.generateNotification(testPhoneNumber, "PAYMENT", "Payment 1 completed");
         notificationService.generateNotification(testPhoneNumber, "WALLET", "Wallet topped up");
         notificationService.generateNotification(testPhoneNumber, "CLAIM", "Claim status");
+        notificationService.generateNotification(testPhoneNumber, "FUND_FLUCTUATION", "Simulate market change");
 
         // Assert: Retrieve all notifications
         List<Notification> allNotifications = notificationService.getAllNotifications(testPhoneNumber);
-        assertEquals(3, allNotifications.size(), "Should have 3 notifications");
+        assertEquals(4, allNotifications.size(), "Should have 4 notifications");
 
         // Verify notification types
         assertTrue(allNotifications.stream().anyMatch(n -> n.getType().equals("PAYMENT")));
         assertTrue(allNotifications.stream().anyMatch(n -> n.getType().equals("WALLET")));
         assertTrue(allNotifications.stream().anyMatch(n -> n.getType().equals("CLAIM")));
+        assertTrue(allNotifications.stream().anyMatch(n -> n.getType().equals("FUND_FLUCTUATION")));
 
         // Verify all are unread
         long unreadCount = notificationService.getUnreadCount(testPhoneNumber);
-        assertEquals(3, unreadCount, "All 3 notifications should be unread");
+        assertEquals(4, unreadCount, "All 4 notifications should be unread");
 
         // Verify unread notifications list
         List<Notification> unreadNotifs = notificationService.getUnreadNotifications(testPhoneNumber);
-        assertEquals(3, unreadNotifs.size(), "Should have 3 unread notifications");
+        assertEquals(4, unreadNotifs.size(), "Should have 4 unread notifications");
         assertTrue(unreadNotifs.stream().allMatch(n -> !n.isRead()), "All should be unread");
     }
-
 }
