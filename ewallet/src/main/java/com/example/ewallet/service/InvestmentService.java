@@ -13,6 +13,7 @@ import com.example.ewallet.entity.Portfolio;
 import com.example.ewallet.repository.FundRepository;
 import com.example.ewallet.repository.InvestmentHistoryRepository;
 import com.example.ewallet.repository.PortfolioRepository;
+import com.example.ewallet.service.NotificationService;
 
 @Service
 public class InvestmentService {
@@ -81,9 +82,6 @@ public class InvestmentService {
 
                 updateUserPortfolio(username, fundId, investment.getUnits());
                 InvestmentHistory savedInvestment = investmentHistoryRepository.save(investment);
-
-                // Notify user about investment
-                notificationService.notifyInvestmentMade(username, fund.getName(), amount, investment.getUnits());
 
                 return savedInvestment;
             } catch (Exception e) {
@@ -314,7 +312,7 @@ public class InvestmentService {
         return sb.toString();
     }
 
-    public void simulateMarketChange() {
+    public void simulateMarketChange(String phoneNumber) {
         List<Fund> funds = fundRepository.findAll();
         if (funds.isEmpty()) {
             System.out.println("No funds available to simulate.");
@@ -353,6 +351,15 @@ public class InvestmentService {
 
             System.out.printf("[Market] %-25s: RM %8.4f -> RM %8.4f (%+.2f%%)%n",
                     fund.getName(), oldPrice, newPrice, changePercent * 100);
+            
+            // Send fund fluctuation alert if change exceeds 5% threshold
+            double percentageChange = Math.abs(changePercent * 100);
+            if (percentageChange >= 5.0) {
+                String direction = changePercent > 0 ? "increased" : "decreased";
+                notificationService.generateNotification(phoneNumber, "FUND_FLUCTUATION",
+                    String.format("Fund '%s' value has %s by %.2f%% (Previous: RM %.2f, Current: RM %.2f)",
+                        fund.getName(), direction, percentageChange, oldPrice, newPrice));
+            }
         }
     }
 
